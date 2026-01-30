@@ -1,0 +1,208 @@
+@import "tailwindcss";
+
+/* Import Google Font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+/* Custom Theme Variables */
+@theme {
+    /* Neural Network Blue Color Palette */
+    --color-primary: #6366F1;
+    --color-primary-50: #EEEEFF;
+    --color-primary-100: #E0E1FF;
+    --color-primary-200: #C7C8FE;
+    --color-primary-300: #A5A7FC;
+    --color-primary-400: #8386F9;
+    --color-primary-500: #6366F1;
+    --color-primary-600: #4F52E8;
+    --color-primary-700: #3B3ECF;
+    --color-primary-800: #2E31A8;
+    --color-primary-900: #262985;
+
+    --color-secondary: #8B5CF6;
+    --color-secondary-50: #F5F3FF;
+    --color-secondary-100: #EDE9FE;
+    --color-secondary-200: #DDD6FE;
+    --color-secondary-300: #C4B5FD;
+    --color-secondary-400: #A78BFA;
+    --color-secondary-500: #8B5CF6;
+    --color-secondary-600: #7C3AED;
+    --color-secondary-700: #6D28D9;
+    --color-secondary-800: #5B21B6;
+    --color-secondary-900: #4C1D95;
+
+    --color-accent: #EC4899;
+    --color-accent-50: #FDF2F8;
+    --color-accent-100: #FCE7F3;
+    --color-accent-200: #FBCFE8;
+    --color-accent-300: #F9A8D4;
+    --color-accent-400: #F472B6;
+    --color-accent-500: #EC4899;
+    --color-accent-600: #DB2777;
+    --color-accent-700: #BE185D;
+    --color-accent-800: #9D174D;
+    --color-accent-900: #831843;
+
+    --color-success: #10B981;
+    --color-success-50: #ECFDF5;
+    --color-success-100: #D1FAE5;
+    --color-success-500: #10B981;
+    --color-success-600: #059669;
+
+    --color-warning: #F59E0B;
+    --color-warning-50: #FFFBEB;
+    --color-warning-100: #FEF3C7;
+    --color-warning-300: #FCD34D;
+    --color-warning-500: #F59E0B;
+
+    --color-error: #EF4444;
+    --color-error-50: #FEF2F2;
+    --color-error-100: #FEE2E2;
+    --color-error-500: #EF4444;
+    --color-error-600: #DC2626;
+
+    --color-dark: #0F172A;
+    --color-dark-50: #F8FAFC;
+    --color-dark-100: #F1F5F9;
+    --color-dark-200: #E2E8F0;
+    --color-dark-300: #CBD5E1;
+    --color-dark-400: #94A3B8;
+    --color-dark-500: #64748B;
+    --color-dark-600: #475569;
+    --color-dark-700: #334155;
+    --color-dark-800: #1E293B;
+    --color-dark-900: #0F172A;
+    --color-dark-950: #020617;
+
+    /* Font Families */
+    --font-family-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-family-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+    /* Custom Shadows */
+    --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.3);
+    --shadow-glow-lg: 0 0 40px rgba(99, 102, 241, 0.4);
+    --shadow-glow-accent: 0 0 20px rgba(236, 72, 153, 0.3);
+
+    /* Custom Animations */
+    --animate-float: float 6s ease-in-out infinite;
+    --animate-pulse-slow: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    --animate-spin-slow: spin 8s linear infinite;
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-20px);
+    }
+}
+
+/* Base Styles */
+html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    background-color: var(--color-dark-900);
+    color: var(--color-dark-100);
+    font-family: var(--font-family-sans);
+    background-image:
+        radial-gradient(ellipse at top, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at bottom, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
+    background-attachment: fixed;
+    min-height: 100vh;
+}
+
+/* Custom Selection */
+::selection {
+    background-color: rgba(236, 72, 153, 0.3);
+    color: white;
+}
+
+::-moz-selection {
+    background-color: rgba(236, 72, 153, 0.3);
+    color: white;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background-color: var(--color-dark-800);
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: rgba(99, 102, 241, 0.5);
+    border-radius: 9999px;
+    transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-primary);
+}
+
+/* Firefox Scrollbar */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(99, 102, 241, 0.5) #1E293B;
+}
+
+/* Focus Styles */
+*:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-primary), 0 0 0 4px var(--color-dark-900);
+}
+
+/* Remove default focus outline */
+button:focus,
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+}
+
+/* Utility Classes */
+@utility glass-card {
+    background-color: rgba(30, 41, 59, 0.5);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(51, 65, 85, 0.5);
+    border-radius: 1rem;
+}
+
+@utility gradient-text {
+    background: linear-gradient(to right, var(--color-primary), var(--color-secondary), var(--color-accent));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+@utility glow-primary {
+    box-shadow: var(--shadow-glow);
+}
+
+@utility glow-accent {
+    box-shadow: var(--shadow-glow-accent);
+}
+
+@utility neural-bg {
+    background-image: radial-gradient(circle at 2px 2px, rgba(99, 102, 241, 0.15) 1px, transparent 0);
+    background-size: 40px 40px;
+}
+
+@utility scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
