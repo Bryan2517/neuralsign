@@ -1,10 +1,12 @@
 /**
  * NeuralSign App
- * Main application component with routing
+ * Main application component with routing and Firebase auth initialization
  */
 
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Brain, Loader2 } from 'lucide-react';
 
 // Layout Components
 import Navbar from '@/components/layout/Navbar';
@@ -14,11 +16,15 @@ import Footer from '@/components/layout/Footer';
 import Home from '@/pages/Home';
 import Login from '@/pages/Login';
 import Signup from '@/pages/Signup';
+import ResetPassword from '@/pages/ResetPassword';
 import Learn from '@/pages/Learn';
 import Practice from '@/pages/Practice';
 import SentenceBuilder from '@/pages/SentenceBuilder';
 import Progress from '@/pages/Progress';
 import Profile from '@/pages/Profile';
+
+// Components
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 // Store
 import useAuthStore from '@/store/authStore';
@@ -30,39 +36,50 @@ console.log(`
   Built with ❤️ for KitaHack 2026
   Powered by Gemini AI, Three.js, and Firebase
   
-  Status: Foundation Setup Complete ✅
+  Status: Firebase Auth Integration Complete ✅
 `);
 
 /**
- * Protected Route Wrapper
- * Redirects to login if user is not authenticated
+ * Global Loading Screen
+ * Displayed during initial auth check
  */
-const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuthStore();
-
-  // Show nothing while checking auth (or add a loading spinner)
-  if (isLoading) {
-    return null;
-  }
-
-  // For development, allow access even when not authenticated
-  // TODO: Enable this check after Firebase is configured
-  // if (!isAuthenticated) {
-  //   return <Navigate to="/login" replace />;
-  // }
-
-  return children;
-};
+const GlobalLoadingScreen = () => (
+  <div className="min-h-screen flex items-center justify-center bg-dark-900">
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="text-center"
+    >
+      <div className="relative inline-block mb-6">
+        <Brain className="w-20 h-20 text-primary" />
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+          className="absolute inset-0 flex items-center justify-center"
+        >
+          <div className="w-24 h-24 border-2 border-primary/20 border-t-primary rounded-full" />
+        </motion.div>
+      </div>
+      <h1 className="text-2xl font-bold gradient-text mb-2">NeuralSign</h1>
+      <p className="text-dark-400">Loading your experience...</p>
+    </motion.div>
+  </div>
+);
 
 /**
  * Auth Route Wrapper
  * Redirects to home if user is already authenticated
  */
 const AuthRoute = ({ children }) => {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, isLoading } = useAuthStore();
+
+  // Don't redirect while loading
+  if (isLoading) {
+    return children;
+  }
 
   if (isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/learn" replace />;
   }
 
   return children;
@@ -90,6 +107,19 @@ const AppLayout = ({ children }) => {
  * Main App Component
  */
 function App() {
+  const { initAuth, isLoading } = useAuthStore();
+
+  // Initialize Firebase auth listener on app mount
+  useEffect(() => {
+    console.log('🔄 Starting auth initialization...');
+    initAuth();
+  }, [initAuth]);
+
+  // Show loading screen during initial auth check
+  if (isLoading) {
+    return <GlobalLoadingScreen />;
+  }
+
   return (
     <Router>
       <AppLayout>
@@ -97,7 +127,7 @@ function App() {
           {/* Public Routes */}
           <Route path="/" element={<Home />} />
 
-          {/* Auth Routes */}
+          {/* Auth Routes (redirect if already logged in) */}
           <Route
             path="/login"
             element={
@@ -114,8 +144,16 @@ function App() {
               </AuthRoute>
             }
           />
+          <Route
+            path="/reset-password"
+            element={
+              <AuthRoute>
+                <ResetPassword />
+              </AuthRoute>
+            }
+          />
 
-          {/* Learning Routes */}
+          {/* Protected Routes (require authentication) */}
           <Route
             path="/learn"
             element={
@@ -132,8 +170,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* Practice Routes */}
           <Route
             path="/practice"
             element={
@@ -142,8 +178,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* Sentence Builder */}
           <Route
             path="/sentence-builder"
             element={
@@ -152,8 +186,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* Progress */}
           <Route
             path="/progress"
             element={
@@ -162,8 +194,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* Profile */}
           <Route
             path="/profile"
             element={

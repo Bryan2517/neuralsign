@@ -10,6 +10,7 @@ import { Brain, Mail, Lock, Eye, EyeOff, User, UserPlus, ArrowRight, CheckCircle
 import PageContainer from '@/components/layout/PageContainer';
 import Button from '@/components/common/Button';
 import ErrorMessage from '@/components/common/ErrorMessage';
+import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
 import useAuthStore from '@/store/authStore';
 import { cn, isValidEmail, isValidPassword } from '@/utils/helpers';
 
@@ -22,7 +23,7 @@ const passwordRequirements = [
 
 const Signup = () => {
     const navigate = useNavigate();
-    const { signup, isLoading, error, clearError } = useAuthStore();
+    const { signup, loginWithGoogle, isLoading, error, clearError } = useAuthStore();
 
     const [formData, setFormData] = useState({
         displayName: '',
@@ -74,6 +75,17 @@ const Signup = () => {
         }
     };
 
+    const handleGoogleSignIn = async () => {
+        try {
+            await loginWithGoogle();
+            navigate('/learn');
+        } catch (err) {
+            console.error('Google sign-in error:', err);
+        }
+    };
+
+    const displayError = localError || error;
+
     return (
         <PageContainer className="min-h-screen flex items-center justify-center py-12">
             <div className="w-full max-w-md">
@@ -100,9 +112,9 @@ const Signup = () => {
                 >
                     <form onSubmit={handleSubmit} className="space-y-5">
                         {/* Error Message */}
-                        {(localError || error) && (
+                        {displayError && (
                             <ErrorMessage
-                                message={localError || error}
+                                message={displayError}
                                 onDismiss={() => {
                                     setLocalError('');
                                     clearError();
@@ -124,6 +136,7 @@ const Signup = () => {
                                     value={formData.displayName}
                                     onChange={handleChange}
                                     placeholder="Your name"
+                                    autoComplete="name"
                                     className={cn(
                                         'w-full pl-10 pr-4 py-3 rounded-xl',
                                         'bg-dark-700/50 border border-dark-600',
@@ -149,6 +162,7 @@ const Signup = () => {
                                     value={formData.email}
                                     onChange={handleChange}
                                     placeholder="you@example.com"
+                                    autoComplete="email"
                                     className={cn(
                                         'w-full pl-10 pr-4 py-3 rounded-xl',
                                         'bg-dark-700/50 border border-dark-600',
@@ -174,6 +188,7 @@ const Signup = () => {
                                     value={formData.password}
                                     onChange={handleChange}
                                     placeholder="••••••••"
+                                    autoComplete="new-password"
                                     className={cn(
                                         'w-full pl-10 pr-12 py-3 rounded-xl',
                                         'bg-dark-700/50 border border-dark-600',
@@ -186,6 +201,7 @@ const Signup = () => {
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
                                     className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-dark-200 transition-colors"
+                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                                 >
                                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                 </button>
@@ -224,6 +240,7 @@ const Signup = () => {
                                     value={formData.confirmPassword}
                                     onChange={handleChange}
                                     placeholder="••••••••"
+                                    autoComplete="new-password"
                                     className={cn(
                                         'w-full pl-10 pr-12 py-3 rounded-xl',
                                         'bg-dark-700/50 border border-dark-600',
@@ -237,6 +254,7 @@ const Signup = () => {
                                     type="button"
                                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                                     className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-dark-200 transition-colors"
+                                    aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                                 >
                                     {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                 </button>
@@ -262,19 +280,8 @@ const Signup = () => {
                         <div className="flex-1 h-px bg-dark-600" />
                     </div>
 
-                    {/* Google Sign Up (Placeholder) */}
-                    <Button
-                        variant="outline"
-                        fullWidth
-                        onClick={() => console.log('Google sign up')}
-                    >
-                        <img
-                            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                            alt="Google"
-                            className="w-5 h-5 mr-2"
-                        />
-                        Continue with Google
-                    </Button>
+                    {/* Google Sign Up */}
+                    <GoogleSignInButton onClick={handleGoogleSignIn} isLoading={isLoading} />
                 </motion.div>
 
                 {/* Login Link */}

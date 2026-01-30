@@ -4,18 +4,20 @@
  */
 
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Brain, Mail, Lock, Eye, EyeOff, LogIn, ArrowRight } from 'lucide-react';
 import PageContainer from '@/components/layout/PageContainer';
 import Button from '@/components/common/Button';
 import ErrorMessage from '@/components/common/ErrorMessage';
+import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
 import useAuthStore from '@/store/authStore';
-import { cn } from '@/utils/helpers';
+import { cn, isValidEmail } from '@/utils/helpers';
 
 const Login = () => {
     const navigate = useNavigate();
-    const { login, isLoading, error, clearError } = useAuthStore();
+    const location = useLocation();
+    const { login, loginWithGoogle, isLoading, error, clearError } = useAuthStore();
 
     const [formData, setFormData] = useState({
         email: '',
@@ -23,6 +25,9 @@ const Login = () => {
     });
     const [showPassword, setShowPassword] = useState(false);
     const [localError, setLocalError] = useState('');
+
+    // Get redirect path from location state or default to /learn
+    const from = location.state?.from?.pathname || '/learn';
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -35,18 +40,35 @@ const Login = () => {
         e.preventDefault();
         setLocalError('');
 
+        // Validation
         if (!formData.email || !formData.password) {
             setLocalError('Please fill in all fields');
             return;
         }
 
+        if (!isValidEmail(formData.email)) {
+            setLocalError('Please enter a valid email address');
+            return;
+        }
+
         try {
             await login(formData.email, formData.password);
-            navigate('/learn');
+            navigate(from, { replace: true });
         } catch (err) {
             console.error('Login error:', err);
         }
     };
+
+    const handleGoogleSignIn = async () => {
+        try {
+            await loginWithGoogle();
+            navigate(from, { replace: true });
+        } catch (err) {
+            console.error('Google sign-in error:', err);
+        }
+    };
+
+    const displayError = localError || error;
 
     return (
         <PageContainer className="min-h-screen flex items-center justify-center py-12">
@@ -74,9 +96,9 @@ const Login = () => {
                 >
                     <form onSubmit={handleSubmit} className="space-y-6">
                         {/* Error Message */}
-                        {(localError || error) && (
+                        {displayError && (
                             <ErrorMessage
-                                message={localError || error}
+                                message={displayError}
                                 onDismiss={() => {
                                     setLocalError('');
                                     clearError();
@@ -98,6 +120,7 @@ const Login = () => {
                                     value={formData.email}
                                     onChange={handleChange}
                                     placeholder="you@example.com"
+                                    autoComplete="email"
                                     className={cn(
                                         'w-full pl-10 pr-4 py-3 rounded-xl',
                                         'bg-dark-700/50 border border-dark-600',
@@ -123,6 +146,7 @@ const Login = () => {
                                     value={formData.password}
                                     onChange={handleChange}
                                     placeholder="••••••••"
+                                    autoComplete="current-password"
                                     className={cn(
                                         'w-full pl-10 pr-12 py-3 rounded-xl',
                                         'bg-dark-700/50 border border-dark-600',
@@ -135,6 +159,7 @@ const Login = () => {
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
                                     className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-dark-200 transition-colors"
+                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                                 >
                                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                 </button>
@@ -144,7 +169,7 @@ const Login = () => {
                         {/* Forgot Password */}
                         <div className="flex justify-end">
                             <Link
-                                to="#"
+                                to="/reset-password"
                                 className="text-sm text-primary hover:text-primary-400 transition-colors"
                             >
                                 Forgot password?
@@ -170,19 +195,8 @@ const Login = () => {
                         <div className="flex-1 h-px bg-dark-600" />
                     </div>
 
-                    {/* Google Sign In (Placeholder) */}
-                    <Button
-                        variant="outline"
-                        fullWidth
-                        onClick={() => console.log('Google sign in')}
-                    >
-                        <img
-                            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                            alt="Google"
-                            className="w-5 h-5 mr-2"
-                        />
-                        Continue with Google
-                    </Button>
+                    {/* Google Sign In */}
+                    <GoogleSignInButton onClick={handleGoogleSignIn} isLoading={isLoading} />
                 </motion.div>
 
                 {/* Sign Up Link */}

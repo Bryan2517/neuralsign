@@ -1,41 +1,110 @@
 /**
  * NeuralSign Auth Store
  * Zustand store for authentication state management
+ * 
+ * Integrates with Firebase Auth and Firestore
  */
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { onAuthStateChange, signIn, signUp, signInWithGoogle, logOut, resetPassword, updateUserProfile as authUpdateProfile } from '@/services/auth';
+import { getUserProfile } from '@/services/database';
 
 /**
  * Auth Store
- * Manages user authentication state
- * 
- * Note: Firebase integration will be added in Part 2
- * This is a placeholder structure for the store
+ * Manages user authentication state with Firebase integration
  */
 const useAuthStore = create(
     persist(
         (set, get) => ({
             // State
-            user: null,
+            user: null,           // Firebase user object
+            userData: null,       // Firestore user data
             isAuthenticated: false,
             isLoading: true,
             error: null,
+            unsubscribe: null,    // Auth listener unsubscribe function
 
-            // Actions
+            // ============================================
+            // INITIALIZATION
+            // ============================================
 
             /**
-             * Initialize auth state
-             * Will connect to Firebase auth observer in Part 2
+             * Initialize auth state with Firebase onAuthStateChanged listener
+             * Should be called once when app loads
              */
             initAuth: () => {
-                // TODO: Add Firebase auth state observer
-                set({ isLoading: false });
+                console.log('🔐 Initializing auth listener...');
+
+                // Unsubscribe from previous listener if exists
+                const currentUnsubscribe = get().unsubscribe;
+                if (currentUnsubscribe) {
+                    currentUnsubscribe();
+                }
+
+                const unsubscribe = onAuthStateChange(async (firebaseUser) => {
+                    console.log('🔔 Auth state changed:', firebaseUser ? firebaseUser.uid : 'null');
+
+                    if (firebaseUser) {
+                        // User is signed in
+                        try {
+                            // Fetch user data from Firestore
+                            const userData = await getUserProfile(firebaseUser.uid);
+
+                            set({
+                                user: {
+                                    uid: firebaseUser.uid,
+                                    email: firebaseUser.email,
+                                    displayName: firebaseUser.displayName,
+                                    photoURL: firebaseUser.photoURL,
+                                    emailVerified: firebaseUser.emailVerified,
+                                    metadata: firebaseUser.metadata,
+                                },
+                                userData: userData,
+                                isAuthenticated: true,
+                                isLoading: false,
+                                error: null,
+                            });
+
+                            console.log('✅ User authenticated and data loaded');
+                        } catch (error) {
+                            console.error('❌ Error fetching user data:', error);
+                            set({
+                                user: {
+                                    uid: firebaseUser.uid,
+                                    email: firebaseUser.email,
+                                    displayName: firebaseUser.displayName,
+                                    photoURL: firebaseUser.photoURL,
+                                },
+                                userData: null,
+                                isAuthenticated: true,
+                                isLoading: false,
+                                error: 'Failed to load user data',
+                            });
+                        }
+                    } else {
+                        // User is signed out
+                        set({
+                            user: null,
+                            userData: null,
+                            isAuthenticated: false,
+                            isLoading: false,
+                            error: null,
+                        });
+                        console.log('👋 User signed out');
+                    }
+                });
+
+                set({ unsubscribe });
+                console.log('✅ Auth listener initialized');
             },
 
+            // ============================================
+            // STATE SETTERS
+            // ============================================
+
             /**
-             * Set the current user
-             * @param {Object|null} user - User object or null
+             * Set the Firebase user
              */
             setUser: (user) => {
                 set({
@@ -47,8 +116,14 @@ const useAuthStore = create(
             },
 
             /**
+             * Set the Firestore user data
+             */
+            setUserData: (userData) => {
+                set({ userData });
+            },
+
+            /**
              * Set loading state
-             * @param {boolean} isLoading - Loading state
              */
             setLoading: (isLoading) => {
                 set({ isLoading });
@@ -56,7 +131,6 @@ const useAuthStore = create(
 
             /**
              * Set error state
-             * @param {string|null} error - Error message or null
              */
             setError: (error) => {
                 set({ error });
@@ -69,35 +143,23 @@ const useAuthStore = create(
                 set({ error: null });
             },
 
+            // ============================================
+            // AUTH ACTIONS
+            // ============================================
+
             /**
-             * Login user
-             * @param {string} email - User email
-             * @param {string} password - User password
-             * @returns {Promise<void>}
+             * Login user with email and password
              */
             login: async (email, password) => {
                 set({ isLoading: true, error: null });
 
                 try {
-                    // TODO: Implement Firebase signInWithEmailAndPassword
-                    console.log('Login placeholder:', email);
-
-                    // Simulated success for development
-                    const mockUser = {
-                        uid: 'mock-uid',
-                        email,
-                        displayName: 'Test User',
-                        photoURL: null,
-                    };
-
-                    set({
-                        user: mockUser,
-                        isAuthenticated: true,
-                        isLoading: false,
-                    });
+                    await signIn(email, password);
+                    // Auth state will be updated by onAuthStateChanged listener
+                    console.log('✅ Login successful');
                 } catch (error) {
                     set({
-                        error: error.message || 'Login failed',
+                        error: error.message,
                         isLoading: false,
                     });
                     throw error;
@@ -106,34 +168,37 @@ const useAuthStore = create(
 
             /**
              * Sign up new user
-             * @param {string} email - User email
-             * @param {string} password - User password
-             * @param {string} displayName - User display name
-             * @returns {Promise<void>}
              */
             signup: async (email, password, displayName) => {
                 set({ isLoading: true, error: null });
 
                 try {
-                    // TODO: Implement Firebase createUserWithEmailAndPassword
-                    console.log('Signup placeholder:', email, displayName);
-
-                    // Simulated success for development
-                    const mockUser = {
-                        uid: 'mock-uid-new',
-                        email,
-                        displayName,
-                        photoURL: null,
-                    };
-
-                    set({
-                        user: mockUser,
-                        isAuthenticated: true,
-                        isLoading: false,
-                    });
+                    await signUp(email, password, displayName);
+                    // Auth state will be updated by onAuthStateChanged listener
+                    console.log('✅ Signup successful');
                 } catch (error) {
                     set({
-                        error: error.message || 'Signup failed',
+                        error: error.message,
+                        isLoading: false,
+                    });
+                    throw error;
+                }
+            },
+
+            /**
+             * Sign in with Google
+             */
+            loginWithGoogle: async () => {
+                set({ isLoading: true, error: null });
+
+                try {
+                    const result = await signInWithGoogle();
+                    // Auth state will be updated by onAuthStateChanged listener
+                    console.log('✅ Google sign-in successful', result.isNewUser ? '(new user)' : '');
+                    return result;
+                } catch (error) {
+                    set({
+                        error: error.message,
                         isLoading: false,
                     });
                     throw error;
@@ -142,24 +207,17 @@ const useAuthStore = create(
 
             /**
              * Logout user
-             * @returns {Promise<void>}
              */
             logout: async () => {
                 set({ isLoading: true });
 
                 try {
-                    // TODO: Implement Firebase signOut
-                    console.log('Logout placeholder');
-
-                    set({
-                        user: null,
-                        isAuthenticated: false,
-                        isLoading: false,
-                        error: null,
-                    });
+                    await logOut();
+                    // Auth state will be updated by onAuthStateChanged listener
+                    console.log('✅ Logout successful');
                 } catch (error) {
                     set({
-                        error: error.message || 'Logout failed',
+                        error: error.message,
                         isLoading: false,
                     });
                     throw error;
@@ -168,20 +226,17 @@ const useAuthStore = create(
 
             /**
              * Reset password
-             * @param {string} email - User email
-             * @returns {Promise<void>}
              */
             resetPassword: async (email) => {
                 set({ isLoading: true, error: null });
 
                 try {
-                    // TODO: Implement Firebase sendPasswordResetEmail
-                    console.log('Reset password placeholder:', email);
-
+                    await resetPassword(email);
                     set({ isLoading: false });
+                    console.log('✅ Password reset email sent');
                 } catch (error) {
                     set({
-                        error: error.message || 'Password reset failed',
+                        error: error.message,
                         isLoading: false,
                     });
                     throw error;
@@ -190,34 +245,53 @@ const useAuthStore = create(
 
             /**
              * Update user profile
-             * @param {Object} updates - Profile updates
-             * @returns {Promise<void>}
              */
             updateProfile: async (updates) => {
                 set({ isLoading: true, error: null });
 
                 try {
-                    // TODO: Implement Firebase updateProfile
-                    console.log('Update profile placeholder:', updates);
+                    await authUpdateProfile(updates);
 
+                    // Update local state immediately
                     const currentUser = get().user;
+                    const currentUserData = get().userData;
+
                     set({
                         user: { ...currentUser, ...updates },
+                        userData: currentUserData ? { ...currentUserData, ...updates } : null,
                         isLoading: false,
                     });
+
+                    console.log('✅ Profile updated');
                 } catch (error) {
                     set({
-                        error: error.message || 'Profile update failed',
+                        error: error.message,
                         isLoading: false,
                     });
                     throw error;
+                }
+            },
+
+            /**
+             * Refresh user data from Firestore
+             */
+            refreshUserData: async () => {
+                const user = get().user;
+                if (!user?.uid) return;
+
+                try {
+                    const userData = await getUserProfile(user.uid);
+                    set({ userData });
+                    console.log('✅ User data refreshed');
+                } catch (error) {
+                    console.error('❌ Error refreshing user data:', error);
                 }
             },
         }),
         {
             name: 'neuralsign-auth',
             partialize: (state) => ({
-                // Only persist essential user data
+                // Only persist essential user data (not the unsubscribe function)
                 user: state.user,
                 isAuthenticated: state.isAuthenticated,
             }),
