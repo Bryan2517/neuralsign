@@ -186,6 +186,44 @@ export async function addLearnedSign(userId, signId) {
 }
 
 /**
+ * Remove learned sign from user's collection
+ * 
+ * @param {string} userId - User ID
+ * @param {string} signId - Sign ID
+ * @returns {Promise<boolean>} True if removed, false if not in collection
+ */
+export async function removeLearnedSign(userId, signId) {
+    try {
+        console.log('📝 Removing learned sign:', userId, signId);
+
+        // First check if sign is in the learned list
+        const userProfile = await getUserProfile(userId);
+
+        if (!userProfile?.learnedSigns?.includes(signId)) {
+            console.log('ℹ️ Sign not in learned list');
+            return false;
+        }
+
+        const userRef = doc(db, COLLECTIONS.USERS, userId);
+
+        // Filter out the sign from the array
+        const updatedLearnedSigns = userProfile.learnedSigns.filter(s => s !== signId);
+
+        await updateDoc(userRef, {
+            learnedSigns: updatedLearnedSigns,
+            'progress.totalSigns': Math.max((userProfile?.progress?.totalSigns || 1) - 1, 0),
+            updatedAt: serverTimestamp(),
+        });
+
+        console.log('✅ Learned sign removed successfully');
+        return true;
+    } catch (error) {
+        console.error('❌ Error removing learned sign:', error.message);
+        throw new Error('Failed to remove learned sign.');
+    }
+}
+
+/**
  * Update user's average accuracy from practice history
  * 
  * @param {string} userId - User ID

@@ -18,6 +18,7 @@ import Login from '@/pages/Login';
 import Signup from '@/pages/Signup';
 import ResetPassword from '@/pages/ResetPassword';
 import Learn from '@/pages/Learn';
+import LetterDetail from '@/pages/LetterDetail';
 import Practice from '@/pages/Practice';
 import SentenceBuilder from '@/pages/SentenceBuilder';
 import Progress from '@/pages/Progress';
@@ -167,6 +168,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Learn />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/learn/letter/:letter"
+            element={
+              <ProtectedRoute>
+                <LetterDetail />
               </ProtectedRoute>
             }
           />
