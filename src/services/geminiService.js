@@ -350,41 +350,72 @@ function validateAndNormalizeResult(result) {
 
 /**
  * Analyze a sentence and break it down into ASL signs
+ * Uses proper ASL grammar rules: TIME + TOPIC + COMMENT, question words at end
  * 
  * @param {string} sentence - Plain text sentence to analyze
- * @returns {Promise<string[]>} Array of words suitable for ASL signing
+ * @returns {Promise<{original: string, aslWords: string[], explanation: string}>}
  */
 export async function analyzeSentenceToSigns(sentence) {
     // Default response
-    const defaultWords = sentence.toUpperCase().split(/\s+/).filter(Boolean);
+    const defaultResponse = {
+        original: sentence,
+        aslWords: sentence.toUpperCase().split(/\s+/).filter(Boolean),
+        explanation: 'Basic word splitting (AI translation unavailable)'
+    };
 
     // Check API key
     if (!GEMINI_API_KEY) {
         console.warn('⚠️ Gemini API not configured, returning split words');
-        return defaultWords;
+        return defaultResponse;
     }
 
     if (!sentence || typeof sentence !== 'string') {
-        return [];
+        return { original: '', aslWords: [], explanation: '' };
     }
+
+    // Check cooldown
+    const cooldown = getCooldownRemaining();
+    if (cooldown > 0) {
+        console.log(`⏳ Waiting ${Math.ceil(cooldown / 1000)}s for cooldown...`);
+        await sleep(cooldown);
+    }
+
+    // Update last request time
+    lastRequestTime = Date.now();
 
     try {
         console.log(`📝 Analyzing sentence for ASL: "${sentence}"`);
 
-        const prompt = `You are a sign language translation assistant.
-Break down this sentence into individual words suitable for ASL (American Sign Language).
-Sentence: "${sentence}"
+        const prompt = `You are an expert ASL (American Sign Language) translator and teacher.
+Convert this English sentence into ASL signing order:
+"${sentence}"
 
-Rules:
-- Remove filler words like: a, the, is, am, are, was, were, be, been
-- Keep only meaningful content words
-- Simplify complex words to simpler equivalents
-- Maintain the core meaning of the sentence
-- Return words in the correct signing order (ASL word order may differ from English)
-- Use UPPERCASE for all words
+IMPORTANT RULES FOR ASL TRANSLATION:
+1. ASL has different grammar than English - word order changes
+2. Remove filler words: a, an, the, is, am, are, was, were, be, been, being
+3. Remove auxiliary verbs when not needed
+4. Keep only content words (nouns, verbs, adjectives, adverbs)
+5. ASL often follows: TIME + TOPIC + COMMENT structure
+6. Questions: Question word often at end (WHO, WHAT, WHERE, WHEN, WHY, HOW)
+7. Use present tense when tense is clear from context
+8. Simplify complex words to basic equivalents when possible
 
-Respond with ONLY a JSON array of words, nothing else.
-Example: ["I", "GO", "STORE"]`;
+Examples:
+"I am going to the store" → ["I", "GO", "STORE"]
+"What is your name?" → ["YOUR", "NAME", "WHAT"]
+"The cat is sleeping" → ["CAT", "SLEEP"]
+"I will eat dinner later" → ["LATER", "I", "EAT", "DINNER"]
+"Where are you going?" → ["YOU", "GO", "WHERE"]
+
+Respond with ONLY a JSON object (no markdown, no code blocks):
+{
+  "original": "the original sentence",
+  "aslWords": ["WORD1", "WORD2", "WORD3"],
+  "explanation": "Brief explanation of ASL grammar used (1 sentence)"
+}
+
+Keep all words in UPPERCASE.
+Ensure the ASL order is natural and grammatically correct for ASL.`;
 
         const response = await fetch(`${GEMINI_TEXT_URL}?key=${GEMINI_API_KEY}`, {
             method: 'POST',
@@ -401,51 +432,215 @@ Example: ["I", "GO", "STORE"]`;
                     temperature: 0.3,
                     topK: 20,
                     topP: 0.8,
-                    maxOutputTokens: 256,
+                    maxOutputTokens: 512,
                 }
             })
         });
 
+        // Handle rate limiting
+        if (response.status === 429) {
+            setRateLimitCooldown(10);
+            console.warn('⚠️ Rate limited during sentence analysis');
+            return {
+                ...defaultResponse,
+                explanation: 'Rate limited. Please wait a moment and try again.'
+            };
+        }
+
         if (!response.ok) {
             console.error('❌ Gemini API error:', response.status);
-            return defaultWords;
+            return defaultResponse;
         }
 
         const data = await response.json();
         const textResponse = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!textResponse) {
-            return defaultWords;
+            return defaultResponse;
         }
 
-        // Parse JSON array
+        console.log('📝 Raw Gemini response:', textResponse);
+
+        // Parse JSON response
         try {
-            const words = JSON.parse(textResponse.trim());
-            if (Array.isArray(words)) {
-                console.log('✅ Sentence analyzed:', words);
-                return words.map(w => String(w).toUpperCase());
+            // Try direct parse first
+            const parsed = JSON.parse(textResponse.trim());
+            if (parsed.original && Array.isArray(parsed.aslWords)) {
+                console.log('✅ Sentence analyzed:', parsed);
+                return {
+                    original: parsed.original || sentence,
+                    aslWords: parsed.aslWords.map(w => String(w).toUpperCase()),
+                    explanation: parsed.explanation || 'ASL grammar applied'
+                };
             }
         } catch {
-            // Try to extract array from text
-            const arrayMatch = textResponse.match(/\[[\s\S]*\]/);
-            if (arrayMatch) {
-                const words = JSON.parse(arrayMatch[0]);
-                if (Array.isArray(words)) {
-                    return words.map(w => String(w).toUpperCase());
+            // Try to extract JSON from markdown code blocks
+            const jsonMatch = textResponse.match(/```(?:json)?\s*([\s\S]*?)```/);
+            if (jsonMatch) {
+                try {
+                    const parsed = JSON.parse(jsonMatch[1].trim());
+                    if (parsed.aslWords) {
+                        return {
+                            original: parsed.original || sentence,
+                            aslWords: parsed.aslWords.map(w => String(w).toUpperCase()),
+                            explanation: parsed.explanation || 'ASL grammar applied'
+                        };
+                    }
+                } catch {
+                    console.warn('⚠️ Could not parse JSON from code block');
+                }
+            }
+
+            // Try to find JSON object in text
+            const objectMatch = textResponse.match(/\{[\s\S]*\}/);
+            if (objectMatch) {
+                try {
+                    const parsed = JSON.parse(objectMatch[0]);
+                    if (parsed.aslWords) {
+                        return {
+                            original: parsed.original || sentence,
+                            aslWords: parsed.aslWords.map(w => String(w).toUpperCase()),
+                            explanation: parsed.explanation || 'ASL grammar applied'
+                        };
+                    }
+                } catch {
+                    console.warn('⚠️ Could not parse JSON object from response');
                 }
             }
         }
 
-        return defaultWords;
+        return defaultResponse;
     } catch (error) {
         console.error('❌ Error analyzing sentence:', error);
-        return defaultWords;
+        return defaultResponse;
     }
+}
+
+/**
+ * Validate a hand sign in the context of a sentence word
+ * 
+ * @param {string} imageBase64 - Base64 encoded image (without prefix)
+ * @param {string} targetWord - The word the user is trying to sign
+ * @param {string} fullSentence - The complete sentence for context
+ * @returns {Promise<Object>} Validation result
+ */
+export async function validateSentenceSign(imageBase64, targetWord, fullSentence) {
+    // Default error response
+    const errorResponse = {
+        isCorrect: false,
+        accuracy: 0,
+        feedback: 'Unable to analyze. Please try again.',
+        suggestions: ['Check your internet connection', 'Try again in a moment']
+    };
+
+    // Check API key
+    if (!GEMINI_API_KEY) {
+        console.error('❌ Gemini API key not configured');
+        return {
+            ...errorResponse,
+            feedback: 'AI validation not configured.'
+        };
+    }
+
+    // Validate input
+    if (!imageBase64) {
+        return {
+            ...errorResponse,
+            feedback: 'No image captured. Please ensure camera is working.'
+        };
+    }
+
+    // Check cooldown
+    const cooldown = getCooldownRemaining();
+    if (cooldown > 0) {
+        console.log(`⏳ Waiting ${Math.ceil(cooldown / 1000)}s for cooldown...`);
+        await sleep(cooldown);
+    }
+
+    // Update last request time
+    lastRequestTime = Date.now();
+
+    console.log(`🔍 Validating sign for word "${targetWord}" in sentence context...`);
+
+    const prompt = `You are a sign language expert analyzing a hand sign in the context of a sentence.
+The user is signing the word "${targetWord}" as part of the sentence: "${fullSentence}"
+
+Since this word is being fingerspelled, check if the user is making the correct hand shape for the letter(s) in "${targetWord}".
+
+Analyze the hand position and respond with ONLY a valid JSON object:
+{
+  "isCorrect": true or false,
+  "accuracy": a number between 0 and 100,
+  "feedback": "brief encouraging message",
+  "suggestions": ["tip 1", "tip 2"]
+}
+
+Rules:
+- isCorrect = true if accuracy >= 80
+- Be encouraging and specific
+- Consider that context matters - some words can be signed differently depending on sentence meaning
+- If no hand is detected, set accuracy to 0
+- For fingerspelling, focus on the letter shapes being correct
+
+Respond with ONLY the JSON object, nothing else.`;
+
+    // Retry logic with exponential backoff
+    let lastError = null;
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        if (attempt > 0) {
+            const backoffTime = INITIAL_BACKOFF * Math.pow(2, attempt - 1);
+            console.log(`🔄 Retry attempt ${attempt + 1}/${MAX_RETRIES} after ${backoffTime}ms...`);
+            await sleep(backoffTime);
+        }
+
+        const result = await makeGeminiRequest(imageBase64, prompt);
+
+        if (result.success) {
+            const textResponse = result.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+            if (!textResponse) {
+                console.error('❌ No text response from Gemini');
+                return errorResponse;
+            }
+
+            console.log('📝 Raw Gemini response:', textResponse);
+
+            const parsedResult = parseGeminiResponse(textResponse);
+
+            if (parsedResult) {
+                console.log('✅ Validation result:', parsedResult);
+                return parsedResult;
+            }
+
+            return errorResponse;
+        }
+
+        if (result.rateLimited) {
+            console.warn(`⚠️ Rate limited (attempt ${attempt + 1}/${MAX_RETRIES})`);
+            setRateLimitCooldown(10);
+            lastError = 'Rate limited';
+            continue;
+        }
+
+        lastError = result.error;
+    }
+
+    // All retries exhausted
+    console.error('❌ All retry attempts failed:', lastError);
+    return {
+        ...errorResponse,
+        feedback: 'Too many requests. Please wait a moment before trying again.',
+        suggestions: ['Wait 10-15 seconds', 'Try again']
+    };
 }
 
 export default {
     isGeminiConfigured,
     captureFrameFromVideo,
     validateHandSign,
-    analyzeSentenceToSigns
+    analyzeSentenceToSigns,
+    validateSentenceSign,
+    getCooldownRemaining,
+    canMakeRequest
 };
+
