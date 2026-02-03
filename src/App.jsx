@@ -28,6 +28,7 @@ import PracticeHistory from '@/pages/PracticeHistory';
 import SentenceBuilder from '@/pages/SentenceBuilder';
 import Progress from '@/pages/Progress';
 import Profile from '@/pages/Profile';
+import Leaderboard from '@/pages/Leaderboard';
 
 // Components
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -253,6 +254,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/leaderboard"
+            element={
+              <ProtectedRoute>
+                <Leaderboard />
               </ProtectedRoute>
             }
           />
