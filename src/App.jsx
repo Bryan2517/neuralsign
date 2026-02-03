@@ -20,6 +20,11 @@ import ResetPassword from '@/pages/ResetPassword';
 import Learn from '@/pages/Learn';
 import LetterDetail from '@/pages/LetterDetail';
 import Practice from '@/pages/Practice';
+import PracticeMenu from '@/pages/PracticeMenu';
+import FreePractice from '@/pages/FreePractice';
+import FlashcardMode from '@/pages/FlashcardMode';
+import TimedChallenge from '@/pages/TimedChallenge';
+import PracticeHistory from '@/pages/PracticeHistory';
 import SentenceBuilder from '@/pages/SentenceBuilder';
 import Progress from '@/pages/Progress';
 import Profile from '@/pages/Profile';
@@ -184,6 +189,46 @@ function App() {
             element={
               <ProtectedRoute>
                 <Practice />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/practice/menu"
+            element={
+              <ProtectedRoute>
+                <PracticeMenu />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/practice/free"
+            element={
+              <ProtectedRoute>
+                <FreePractice />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/practice/flashcard"
+            element={
+              <ProtectedRoute>
+                <FlashcardMode />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/practice/timed"
+            element={
+              <ProtectedRoute>
+                <TimedChallenge />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/practice/history"
+            element={
+              <ProtectedRoute>
+                <PracticeHistory />
               </ProtectedRoute>
             }
           />

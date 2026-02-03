@@ -68,7 +68,7 @@ export function useHandDetection({
     const handleMediaPipeResults = useCallback((results) => {
         // Draw landmarks on canvas
         if (canvasRef.current) {
-            drawHandLandmarks(canvasRef.current, results, true);
+            drawHandLandmarks(canvasRef.current, results, false);
         }
 
         // Extract landmark data
