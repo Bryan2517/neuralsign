@@ -30,7 +30,7 @@ export function usePractice() {
     const initialLetter = searchParams.get('letter')?.toUpperCase() || 'A';
 
     // Auth store
-    const { user } = useAuthStore();
+    const { user, refreshUserData } = useAuthStore();
 
     // State
     const [targetLetter, setTargetLetterState] = useState(initialLetter);
@@ -203,6 +203,9 @@ export function usePractice() {
                     });
                 }
             }
+
+            // Refresh user data to update UI (level, XP, learned signs stats)
+            await refreshUserData();
 
             // Return XP result for level-up modal handling
             return practiceXPResult || signResult?.xpResult || null;

@@ -35,6 +35,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { useHandDetection } from '@/hooks/useHandDetection';
 import { usePractice } from '@/hooks/usePractice';
 import { useLevelUp } from '@/context/LevelUpContext';
+import useAuthStore from '@/store/authStore';
 
 // Data
 import { getSignByLetter } from '@/data/signsData';
@@ -470,7 +471,15 @@ const Practice = () => {
                     />
                 </div>
             </div>
-        </PageContainer>
+
+
+            {/* Achievement Unlock Modal */}
+            <BadgeUnlockModal
+                isOpen={newlyUnlockedAchievements.length > 0}
+                onClose={clearNewAchievements}
+                badges={newlyUnlockedAchievements}
+            />
+        </PageContainer >
     );
 };
 

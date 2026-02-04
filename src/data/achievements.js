@@ -297,9 +297,9 @@ export const tierColors = {
         hex: '#CD7F32'
     },
     silver: {
-        bg: 'from-gray-400/20 to-gray-600/20',
-        border: 'border-gray-400/30',
-        text: 'text-gray-300',
+        bg: 'from-slate-400/20 to-slate-600/20',
+        border: 'border-slate-400/50',
+        text: 'text-slate-200',
         hex: '#C0C0C0'
     },
     gold: {

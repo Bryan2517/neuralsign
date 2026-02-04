@@ -39,9 +39,10 @@ const BadgeUnlockModal = ({
 
     const triggerCelebration = () => {
         const tier = currentBadge?.tier || 'bronze';
+        // Use centralized tier colors for confetti
         const colors = {
             bronze: ['#CD7F32', '#8B4513', '#D2691E'],
-            silver: ['#C0C0C0', '#A8A9AD', '#D3D3D3'],
+            silver: ['#94A3B8', '#64748B', '#CBD5E1'], // Updated to match new slate/blue-gray theme
             gold: ['#FFD700', '#FFA500', '#FFE135'],
             platinum: ['#E5E4E2', '#7FDBFF', '#B10DC9']
         };

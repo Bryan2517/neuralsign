@@ -12,7 +12,6 @@ import { useNavigate } from 'react-router-dom';
 import {
     TrendingUp,
     Flame,
-    Trophy,
     Target,
     Clock,
     Zap,
@@ -20,6 +19,7 @@ import {
     Award,
     ChevronRight
 } from 'lucide-react';
+
 
 // Components
 import PageContainer from '@/components/layout/PageContainer';
@@ -33,6 +33,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 import XPBar from '@/components/xp/XPBar';
 import RankCard from '@/components/leaderboard/RankCard';
 import BadgeUnlockModal from '@/components/badges/BadgeUnlockModal';
+import BadgeCollection from '@/components/badges/BadgeCollection';
 
 // Services
 import { getUserAchievements } from '@/services/database';
@@ -43,7 +44,7 @@ import useAuthStore from '@/store/authStore';
 
 // Data
 import { alphabetSigns } from '@/data/signsData';
-import { achievements as ACHIEVEMENT_DEFINITIONS, getTierColor, LEGACY_ID_MAP } from '@/data/achievements';
+import { achievements as ACHIEVEMENT_DEFINITIONS, LEGACY_ID_MAP } from '@/data/achievements';
 
 /**
  * Sign Mastery Grid Component
@@ -150,59 +151,7 @@ const SignMasteryGrid = ({ learnedSigns = [], practiceHistory = [] }) => {
 /**
  * Achievements Section Component
  */
-const AchievementsSection = ({ unlockedAchievements = [] }) => {
-    const navigate = useNavigate();
 
-    return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="glass-card p-6"
-        >
-            <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                    <Trophy className="w-5 h-5 text-warning" />
-                    <h3 className="font-semibold text-dark-100">Achievements</h3>
-                </div>
-                <span className="text-sm text-dark-400">
-                    {unlockedAchievements.length}/{ACHIEVEMENT_DEFINITIONS.length} unlocked
-                </span>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-                {ACHIEVEMENT_DEFINITIONS.map((achievement) => {
-                    const isUnlocked = unlockedAchievements.some(a => a.id === achievement.id);
-                    const tierColor = getTierColor(achievement.tier);
-
-                    return (
-                        <motion.div
-                            key={achievement.id}
-                            whileHover={{ scale: 1.05 }}
-                            className={`
-                                p-3 rounded-xl text-center transition-all border
-                                ${isUnlocked
-                                    ? `bg-gradient-to-br ${tierColor.bg} ${tierColor.border}`
-                                    : 'bg-dark-700/50 border-dark-600 opacity-50'
-                                }
-                            `}
-                        >
-                            <div className={`text-2xl mb-1 ${isUnlocked ? '' : 'grayscale'}`}>
-                                {achievement.icon}
-                            </div>
-                            <h4 className={`text-xs font-medium mb-0.5 truncate ${isUnlocked ? tierColor.text : 'text-dark-200'}`}>
-                                {achievement.name}
-                            </h4>
-                            <p className="text-[10px] text-dark-400 line-clamp-2">
-                                {achievement.description}
-                            </p>
-                        </motion.div>
-                    );
-                })}
-            </div>
-        </motion.div>
-    );
-};
 
 /**
  * Progress Page Component
@@ -251,7 +200,39 @@ const Progress = () => {
     // Extract user data
     const learnedSigns = userData?.learnedSigns || [];
     const practiceHistory = userData?.practiceHistory || [];
-    const streak = userData?.progress?.streak || 0;
+    // Calculate streak dynamically to match ActivityHeatmap logic
+    const streak = useMemo(() => {
+        if (!practiceHistory?.length) return 0;
+
+        const sessionsByDay = new Set();
+        practiceHistory.forEach(session => {
+            const date = session.timestamp?.toDate?.() || new Date(session.timestamp);
+            date.setHours(0, 0, 0, 0);
+            const dateKey = date.toISOString().split('T')[0];
+            sessionsByDay.add(dateKey);
+        });
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        let currentStreak = 0;
+        // Check up to 365 days back
+        for (let i = 0; i < 365; i++) {
+            const d = new Date(today);
+            d.setDate(d.getDate() - i);
+            d.setHours(0, 0, 0, 0);
+            const dateKey = d.toISOString().split('T')[0];
+
+            if (sessionsByDay.has(dateKey)) {
+                currentStreak++;
+            } else if (i > 0) {
+                // Determine if streak is broken (allow missing today)
+                break;
+            }
+        }
+
+        return currentStreak;
+    }, [practiceHistory]);
     const accuracy = userData?.progress?.accuracy || 0;
     const totalXP = userData?.progress?.totalXP || 0;
 
@@ -418,7 +399,7 @@ const Progress = () => {
             </div>
 
             {/* Achievements */}
-            <AchievementsSection unlockedAchievements={achievements} />
+            <BadgeCollection unlockedAchievements={achievements} />
 
             {/* Achievement Unlock Modal */}
             <BadgeUnlockModal
