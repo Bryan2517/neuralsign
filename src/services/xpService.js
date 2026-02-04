@@ -7,7 +7,7 @@
 
 import { doc, updateDoc, arrayUnion, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db } from './firebase';
-import { COLLECTIONS } from './database';
+import { COLLECTIONS } from './collections';
 
 // ============================================
 // XP CONSTANTS
@@ -21,6 +21,7 @@ export const XP_SOURCES = {
     SENTENCE_COMPLETED: { amount: 15, label: 'Completed sentence' },
     DAILY_CHALLENGE: { amount: 20, label: 'Daily challenge' },
     STREAK_MILESTONE: { amount: 25, label: 'Streak milestone' },
+    ACHIEVEMENT_UNLOCKED: { amount: 50, label: 'Achievement unlocked' },
     LEVEL_BONUS: { amount: 50, label: 'Level up bonus' }
 };
 
@@ -143,9 +144,10 @@ export function getNextPerk(level) {
  * @param {string} userId - User ID
  * @param {number} amount - XP amount to add
  * @param {string} source - Source of XP (from XP_SOURCES)
+ * @param {string} details - Optional details (e.g., "Learned 'A'")
  * @returns {Promise<Object>} Result with new total, level info, and level-up status
  */
-export async function addXP(userId, amount, source) {
+export async function addXP(userId, amount, source, details = null) {
     try {
         console.log(`⭐ Adding ${amount} XP for ${source}:`, userId);
 
@@ -165,7 +167,8 @@ export async function addXP(userId, amount, source) {
         const xpEntry = {
             amount,
             source,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            details // Add details if provided
         };
 
         // Update user document
@@ -287,9 +290,10 @@ export async function getUserXPInfo(userId) {
  * 
  * @param {string} userId - User ID
  * @param {number} accuracy - Session accuracy (0-100)
+ * @param {string} sign - The sign/letter practiced (optional)
  * @returns {Promise<Object>} XP result
  */
-export async function awardPracticeXP(userId, accuracy) {
+export async function awardPracticeXP(userId, accuracy, sign = null) {
     let totalXP = XP_SOURCES.PRACTICE_SESSION.amount;
     const sources = ['PRACTICE_SESSION'];
 
@@ -301,7 +305,10 @@ export async function awardPracticeXP(userId, accuracy) {
         sources.push('HIGH_ACCURACY');
     }
 
-    return addXP(userId, totalXP, sources.join('+'));
+    const detailParts = [`Practice Accuracy: ${accuracy}%`];
+    if (sign) detailParts.unshift(`Practiced '${sign}'`);
+
+    return addXP(userId, totalXP, sources.join('+'), detailParts.join(' • '));
 }
 
 export default {

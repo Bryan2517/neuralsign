@@ -26,12 +26,15 @@ import {
 import PageContainer from '@/components/layout/PageContainer';
 import CameraFeed from '@/components/camera/CameraFeed';
 import ValidationFeedback from '@/components/feedback/ValidationFeedback';
+import LetterNav from '@/components/practice/LetterNav';
+import BadgeUnlockModal from '@/components/badges/BadgeUnlockModal';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 // Hooks
 import { useHandDetection } from '@/hooks/useHandDetection';
 import { usePractice } from '@/hooks/usePractice';
+import { useLevelUp } from '@/context/LevelUpContext';
 
 // Data
 import { getSignByLetter } from '@/data/signsData';
@@ -77,49 +80,15 @@ const SessionStats = ({ attempts, bestAccuracy, correctAttempts }) => (
 );
 
 /**
- * Letter navigation component
- */
-const LetterNav = ({
-    currentLetter,
-    currentIndex,
-    total,
-    onPrev,
-    onNext,
-    hasPrev,
-    hasNext
-}) => (
-    <div className="flex items-center justify-between">
-        <Button
-            variant="ghost"
-            size="sm"
-            onClick={onPrev}
-            disabled={!hasPrev}
-            leftIcon={<ChevronLeft className="w-4 h-4" />}
-        >
-            Prev
-        </Button>
-        <span className="text-dark-400 text-sm">
-            {currentIndex + 1} / {total}
-        </span>
-        <Button
-            variant="ghost"
-            size="sm"
-            onClick={onNext}
-            disabled={!hasNext}
-            rightIcon={<ChevronRight className="w-4 h-4" />}
-        >
-            Next
-        </Button>
-    </div>
-);
-
-/**
  * Practice Page Component
  */
 const Practice = () => {
     const navigate = useNavigate();
     const [isPracticing, setIsPracticing] = useState(false);
     const hasStartedRef = useRef(false);
+
+    // Level up context
+    const { handleXPResult } = useLevelUp();
 
     // Practice hook
     const {
@@ -134,8 +103,12 @@ const Practice = () => {
         prevLetter,
         hasNextLetter,
         hasPrevLetter,
+        newlyUnlockedAchievements,
+        clearNewAchievements,
         currentLetterIndex,
-        totalLetters
+        totalLetters,
+        lastXPResult,
+        clearLastXPResult
     } = usePractice();
 
     // Detection hook
@@ -241,6 +214,14 @@ const Practice = () => {
             stopDetection();
         };
     }, []); // Empty deps - only run on unmount
+
+    // Handle level-up when XP result comes in
+    useEffect(() => {
+        if (lastXPResult) {
+            handleXPResult(lastXPResult);
+            clearLastXPResult();
+        }
+    }, [lastXPResult, handleXPResult, clearLastXPResult]);
 
     // Show initial mode selection if not practicing
     if (!isPracticing) {

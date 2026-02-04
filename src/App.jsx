@@ -29,9 +29,13 @@ import SentenceBuilder from '@/pages/SentenceBuilder';
 import Progress from '@/pages/Progress';
 import Profile from '@/pages/Profile';
 import Leaderboard from '@/pages/Leaderboard';
+import XPHistory from '@/pages/XPHistory';
 
 // Components
 import ProtectedRoute from '@/components/ProtectedRoute';
+
+// Context
+import { LevelUpProvider } from '@/context/LevelUpContext';
 
 // Store
 import useAuthStore from '@/store/authStore';
@@ -128,149 +132,167 @@ function App() {
   }
 
   return (
-    <Router>
-      <AppLayout>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Home />} />
+    <LevelUpProvider>
+      <Router>
+        <AppLayout>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<Home />} />
 
-          {/* Auth Routes (redirect if already logged in) */}
-          <Route
-            path="/login"
-            element={
-              <AuthRoute>
-                <Login />
-              </AuthRoute>
-            }
-          />
-          <Route
-            path="/signup"
-            element={
-              <AuthRoute>
-                <Signup />
-              </AuthRoute>
-            }
-          />
-          <Route
-            path="/reset-password"
-            element={
-              <AuthRoute>
-                <ResetPassword />
-              </AuthRoute>
-            }
-          />
+            {/* Auth Routes (redirect if already logged in) */}
+            <Route
+              path="/login"
+              element={
+                <AuthRoute>
+                  <Login />
+                </AuthRoute>
+              }
+            />
+            <Route
+              path="/signup"
+              element={
+                <AuthRoute>
+                  <Signup />
+                </AuthRoute>
+              }
+            />
+            <Route
+              path="/reset-password"
+              element={
+                <AuthRoute>
+                  <ResetPassword />
+                </AuthRoute>
+              }
+            />
 
-          {/* Protected Routes (require authentication) */}
-          <Route
-            path="/learn"
-            element={
-              <ProtectedRoute>
-                <Learn />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/learn/:lessonId"
-            element={
-              <ProtectedRoute>
-                <Learn />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/learn/letter/:letter"
-            element={
-              <ProtectedRoute>
-                <LetterDetail />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice"
-            element={
-              <ProtectedRoute>
-                <Practice />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/menu"
-            element={
-              <ProtectedRoute>
-                <PracticeMenu />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/free"
-            element={
-              <ProtectedRoute>
-                <FreePractice />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/flashcard"
-            element={
-              <ProtectedRoute>
-                <FlashcardMode />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/timed"
-            element={
-              <ProtectedRoute>
-                <TimedChallenge />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/history"
-            element={
-              <ProtectedRoute>
-                <PracticeHistory />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/sentence-builder"
-            element={
-              <ProtectedRoute>
-                <SentenceBuilder />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/progress"
-            element={
-              <ProtectedRoute>
-                <Progress />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/leaderboard"
-            element={
-              <ProtectedRoute>
-                <Leaderboard />
-              </ProtectedRoute>
-            }
-          />
+            {/* Protected Routes (require authentication) */}
+            <Route
+              path="/learn"
+              element={
+                <ProtectedRoute>
+                  <Learn />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/learn/:lessonId"
+              element={
+                <ProtectedRoute>
+                  <Learn />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/learn/letter/:letter"
+              element={
+                <ProtectedRoute>
+                  <LetterDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice"
+              element={
+                <ProtectedRoute>
+                  <Practice />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/menu"
+              element={
+                <ProtectedRoute>
+                  <PracticeMenu />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/xp-history"
+              element={
+                <ProtectedRoute>
+                  <XPHistory />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/leaderboard"
+              element={
+                <ProtectedRoute>
+                  <Leaderboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/free"
+              element={
+                <ProtectedRoute>
+                  <FreePractice />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/flashcard"
+              element={
+                <ProtectedRoute>
+                  <FlashcardMode />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/timed"
+              element={
+                <ProtectedRoute>
+                  <TimedChallenge />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/history"
+              element={
+                <ProtectedRoute>
+                  <PracticeHistory />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sentence-builder"
+              element={
+                <ProtectedRoute>
+                  <SentenceBuilder />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/progress"
+              element={
+                <ProtectedRoute>
+                  <Progress />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/leaderboard"
+              element={
+                <ProtectedRoute>
+                  <Leaderboard />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Catch-all redirect to home */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </AppLayout>
-    </Router>
+            {/* Catch-all redirect to home */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </AppLayout>
+      </Router>
+    </LevelUpProvider>
   );
 }
 

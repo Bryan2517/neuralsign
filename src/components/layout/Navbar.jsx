@@ -26,6 +26,8 @@ import {
 import { cn } from '@/utils/helpers';
 import useAuthStore from '@/store/authStore';
 import Button from '@/components/common/Button';
+import { MiniXPBadge } from '@/components/xp/XPBar';
+import NotificationCenter from '@/components/notifications/NotificationCenter';
 
 // Navigation items for authenticated users
 const navItems = [
@@ -47,7 +49,7 @@ const Navbar = () => {
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
     const location = useLocation();
-    const { user, isAuthenticated, logout } = useAuthStore();
+    const { user, userData, isAuthenticated, logout } = useAuthStore();
     const userMenuRef = useRef(null);
 
     // Handle scroll effect
@@ -150,103 +152,111 @@ const Navbar = () => {
                     {/* Desktop Auth Buttons / User Menu */}
                     <div className="hidden md:flex items-center gap-3">
                         {isAuthenticated ? (
-                            /* User Dropdown Menu */
-                            <div className="relative" ref={userMenuRef}>
-                                <button
-                                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                                    className={cn(
-                                        'flex items-center gap-2 px-3 py-2 rounded-xl',
-                                        'text-dark-300 hover:text-white hover:bg-dark-800',
-                                        'transition-all duration-200',
-                                        isUserMenuOpen && 'bg-dark-800 text-white'
-                                    )}
-                                >
-                                    {/* Avatar */}
-                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary p-0.5">
-                                        <div className="w-full h-full rounded-full bg-dark-800 flex items-center justify-center overflow-hidden">
-                                            {user?.photoURL ? (
-                                                <img
-                                                    src={user.photoURL}
-                                                    alt="Profile"
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            ) : (
-                                                <span className="text-xs font-bold text-primary">
-                                                    {userInitials}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <span className="text-sm font-medium max-w-24 truncate">
-                                        {user?.displayName || 'User'}
-                                    </span>
-                                    <ChevronDown
+                            <>
+                                {/* XP Badge */}
+                                <MiniXPBadge totalXP={userData?.xp?.total || userData?.progress?.totalXP || 0} />
+
+                                {/* Notifications */}
+                                <NotificationCenter notifications={[]} />
+
+                                {/* User Dropdown Menu */}
+                                <div className="relative" ref={userMenuRef}>
+                                    <button
+                                        onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                                         className={cn(
-                                            'w-4 h-4 transition-transform duration-200',
-                                            isUserMenuOpen && 'rotate-180'
+                                            'flex items-center gap-2 px-3 py-2 rounded-xl',
+                                            'text-dark-300 hover:text-white hover:bg-dark-800',
+                                            'transition-all duration-200',
+                                            isUserMenuOpen && 'bg-dark-800 text-white'
                                         )}
-                                    />
-                                </button>
-
-                                {/* Dropdown Menu */}
-                                <AnimatePresence>
-                                    {isUserMenuOpen && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                                            transition={{ duration: 0.15 }}
-                                            className="absolute right-0 mt-2 w-56 py-2 bg-dark-800 border border-dark-700 rounded-xl shadow-xl"
-                                        >
-                                            {/* User Info */}
-                                            <div className="px-4 py-3 border-b border-dark-700">
-                                                <p className="text-sm font-medium text-dark-100 truncate">
-                                                    {user?.displayName || 'User'}
-                                                </p>
-                                                <p className="text-xs text-dark-400 truncate">
-                                                    {user?.email}
-                                                </p>
+                                    >
+                                        {/* Avatar */}
+                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary p-0.5">
+                                            <div className="w-full h-full rounded-full bg-dark-800 flex items-center justify-center overflow-hidden">
+                                                {user?.photoURL ? (
+                                                    <img
+                                                        src={user.photoURL}
+                                                        alt="Profile"
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <span className="text-xs font-bold text-primary">
+                                                        {userInitials}
+                                                    </span>
+                                                )}
                                             </div>
+                                        </div>
+                                        <span className="text-sm font-medium max-w-24 truncate">
+                                            {user?.displayName || 'User'}
+                                        </span>
+                                        <ChevronDown
+                                            className={cn(
+                                                'w-4 h-4 transition-transform duration-200',
+                                                isUserMenuOpen && 'rotate-180'
+                                            )}
+                                        />
+                                    </button>
 
-                                            {/* Menu Items */}
-                                            <div className="py-2">
-                                                {userMenuItems.map((item) => (
-                                                    item.disabled ? (
-                                                        <span
-                                                            key={item.label}
-                                                            className="flex items-center gap-3 px-4 py-2 text-sm text-dark-500 cursor-not-allowed"
-                                                        >
-                                                            <item.icon className="w-4 h-4" />
-                                                            {item.label}
-                                                            <span className="ml-auto text-xs bg-dark-700 px-2 py-0.5 rounded">Soon</span>
-                                                        </span>
-                                                    ) : (
-                                                        <Link
-                                                            key={item.label}
-                                                            to={item.path}
-                                                            className="flex items-center gap-3 px-4 py-2 text-sm text-dark-300 hover:text-white hover:bg-dark-700 transition-colors"
-                                                        >
-                                                            <item.icon className="w-4 h-4" />
-                                                            {item.label}
-                                                        </Link>
-                                                    )
-                                                ))}
-                                            </div>
+                                    {/* Dropdown Menu */}
+                                    <AnimatePresence>
+                                        {isUserMenuOpen && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                                                transition={{ duration: 0.15 }}
+                                                className="absolute right-0 mt-2 w-56 py-2 bg-dark-800 border border-dark-700 rounded-xl shadow-xl"
+                                            >
+                                                {/* User Info */}
+                                                <div className="px-4 py-3 border-b border-dark-700">
+                                                    <p className="text-sm font-medium text-dark-100 truncate">
+                                                        {user?.displayName || 'User'}
+                                                    </p>
+                                                    <p className="text-xs text-dark-400 truncate">
+                                                        {user?.email}
+                                                    </p>
+                                                </div>
 
-                                            {/* Logout */}
-                                            <div className="pt-2 border-t border-dark-700">
-                                                <button
-                                                    onClick={handleLogout}
-                                                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-error hover:bg-error/10 transition-colors"
-                                                >
-                                                    <LogOut className="w-4 h-4" />
-                                                    Sign Out
-                                                </button>
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
+                                                {/* Menu Items */}
+                                                <div className="py-2">
+                                                    {userMenuItems.map((item) => (
+                                                        item.disabled ? (
+                                                            <span
+                                                                key={item.label}
+                                                                className="flex items-center gap-3 px-4 py-2 text-sm text-dark-500 cursor-not-allowed"
+                                                            >
+                                                                <item.icon className="w-4 h-4" />
+                                                                {item.label}
+                                                                <span className="ml-auto text-xs bg-dark-700 px-2 py-0.5 rounded">Soon</span>
+                                                            </span>
+                                                        ) : (
+                                                            <Link
+                                                                key={item.label}
+                                                                to={item.path}
+                                                                className="flex items-center gap-3 px-4 py-2 text-sm text-dark-300 hover:text-white hover:bg-dark-700 transition-colors"
+                                                            >
+                                                                <item.icon className="w-4 h-4" />
+                                                                {item.label}
+                                                            </Link>
+                                                        )
+                                                    ))}
+                                                </div>
+
+                                                {/* Logout */}
+                                                <div className="pt-2 border-t border-dark-700">
+                                                    <button
+                                                        onClick={handleLogout}
+                                                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-error hover:bg-error/10 transition-colors"
+                                                    >
+                                                        <LogOut className="w-4 h-4" />
+                                                        Sign Out
+                                                    </button>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            </>
                         ) : (
                             /* Auth Buttons for Non-authenticated */
                             <>
@@ -316,6 +326,8 @@ const Navbar = () => {
                                             {user?.email}
                                         </p>
                                     </div>
+                                    {/* XP Badge */}
+                                    <MiniXPBadge totalXP={userData?.xp?.total || userData?.progress?.totalXP || 0} />
                                 </div>
                             )}
 

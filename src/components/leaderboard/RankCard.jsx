@@ -53,6 +53,12 @@ const RankCard = ({
             animate={{ opacity: 1, y: 0 }}
             className="glass-card p-6 bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/20"
         >
+            {/* Header */}
+            <div className="flex items-center gap-2 mb-4">
+                <Trophy className="w-5 h-5 text-warning" />
+                <h3 className="text-lg font-semibold text-dark-100">Your Ranking</h3>
+            </div>
+
             <div className="flex items-center justify-between gap-6">
                 {/* Rank Display */}
                 <div className="flex items-center gap-4">

@@ -30,25 +30,20 @@ import ActivityHeatmap from '@/components/progress/ActivityHeatmap';
 import LearningPath from '@/components/learning/LearningPath';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import XPBar from '@/components/xp/XPBar';
+import RankCard from '@/components/leaderboard/RankCard';
+import BadgeUnlockModal from '@/components/badges/BadgeUnlockModal';
 
 // Services
 import { getUserAchievements } from '@/services/database';
+import { checkAndUnlockAchievements } from '@/services/achievementService';
 
 // Store
 import useAuthStore from '@/store/authStore';
 
 // Data
 import { alphabetSigns } from '@/data/signsData';
-
-// Achievement definitions
-const ACHIEVEMENT_DEFINITIONS = [
-    { id: 'first_sign', name: 'First Sign', description: 'Complete your first sign', icon: '🎯' },
-    { id: 'alphabet_master', name: 'Alphabet Master', description: 'Learn all 26 letters', icon: '🔤' },
-    { id: 'week_warrior', name: 'Week Warrior', description: '7-day learning streak', icon: '🔥' },
-    { id: 'quick_learner', name: 'Quick Learner', description: 'Complete 5 signs in one session', icon: '⚡' },
-    { id: 'perfect_score', name: 'Perfect Score', description: 'Get 100% accuracy on a sign', icon: '💯' },
-    { id: 'speed_demon', name: 'Speed Demon', description: 'Complete timed challenge quickly', icon: '🏎️' },
-];
+import { achievements as ACHIEVEMENT_DEFINITIONS, getTierColor, LEGACY_ID_MAP } from '@/data/achievements';
 
 /**
  * Sign Mastery Grid Component
@@ -178,23 +173,24 @@ const AchievementsSection = ({ unlockedAchievements = [] }) => {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
                 {ACHIEVEMENT_DEFINITIONS.map((achievement) => {
                     const isUnlocked = unlockedAchievements.some(a => a.id === achievement.id);
+                    const tierColor = getTierColor(achievement.tier);
 
                     return (
                         <motion.div
                             key={achievement.id}
                             whileHover={{ scale: 1.05 }}
                             className={`
-                                p-3 rounded-xl text-center transition-all
+                                p-3 rounded-xl text-center transition-all border
                                 ${isUnlocked
-                                    ? 'bg-gradient-to-br from-primary/20 to-secondary/20 border border-primary/30'
-                                    : 'bg-dark-700/50 border border-dark-600 opacity-50'
+                                    ? `bg-gradient-to-br ${tierColor.bg} ${tierColor.border}`
+                                    : 'bg-dark-700/50 border-dark-600 opacity-50'
                                 }
                             `}
                         >
                             <div className={`text-2xl mb-1 ${isUnlocked ? '' : 'grayscale'}`}>
                                 {achievement.icon}
                             </div>
-                            <h4 className="text-xs font-medium text-dark-200 mb-0.5 truncate">
+                            <h4 className={`text-xs font-medium mb-0.5 truncate ${isUnlocked ? tierColor.text : 'text-dark-200'}`}>
                                 {achievement.name}
                             </h4>
                             <p className="text-[10px] text-dark-400 line-clamp-2">
@@ -215,15 +211,42 @@ const Progress = () => {
     const navigate = useNavigate();
     const { user, userData, isLoading } = useAuthStore();
     const [achievements, setAchievements] = useState([]);
+    const [showUnlockModal, setShowUnlockModal] = useState(false);
+    const [newlyUnlockedBadges, setNewlyUnlockedBadges] = useState([]);
 
-    // Load achievements
+    // Load achievements with sync
     useEffect(() => {
-        if (user?.uid) {
-            getUserAchievements(user.uid)
-                .then(setAchievements)
-                .catch(console.error);
-        }
-    }, [user?.uid]);
+        const syncAndLoad = async () => {
+            if (!user?.uid) return;
+
+            try {
+                // 1. Force check for new unlocks (handles retroactive unlocks)
+                // Pass null to force fetching latest data from DB to ensure we have the most up-to-date progress
+                const newUnlocks = await checkAndUnlockAchievements(user.uid, null);
+
+                if (newUnlocks && newUnlocks.length > 0) {
+                    setNewlyUnlockedBadges(newUnlocks);
+                    setShowUnlockModal(true);
+                }
+
+                // 2. Load updated list
+                const savedAchievements = await getUserAchievements(user.uid);
+
+                // 3. Normalize legacy IDs
+                const normalized = savedAchievements.map(a => {
+                    const newId = LEGACY_ID_MAP[a.id] || a.id;
+                    return { ...a, id: newId };
+                });
+
+                const unique = Array.from(new Map(normalized.map(item => [item.id, item])).values());
+                setAchievements(unique);
+            } catch (error) {
+                console.error("Error syncing achievements:", error);
+            }
+        };
+
+        syncAndLoad();
+    }, [user?.uid, userData]); // Re-run if userData changes (e.g. sign learned)
 
     // Extract user data
     const learnedSigns = userData?.learnedSigns || [];
@@ -339,6 +362,42 @@ const Progress = () => {
                 />
             </div>
 
+            {/* XP Progress Bar */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="mb-8 cursor-pointer transition-transform hover:scale-[1.01]"
+                onClick={() => navigate('/xp-history')}
+                title="View XP History"
+            >
+                <h2 className="text-lg font-semibold text-dark-100 mb-3 flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-warning" />
+                    Level Progress
+                </h2>
+                <XPBar totalXP={totalXP} size="large" />
+            </motion.div>
+
+            {/* Leaderboard + Activity Row */}
+            <div className="grid lg:grid-cols-2 gap-6 mb-8">
+                {/* Leaderboard Section */}
+                <div
+                    onClick={() => navigate('/leaderboard')}
+                    className="cursor-pointer transition-transform hover:scale-[1.01]"
+                    title="View full leaderboard"
+                >
+                    <RankCard
+                        rank={Math.floor(Math.random() * 50) + 1}
+                        totalUsers={150}
+                        value={totalXP}
+                        metric="xp"
+                    />
+                </div>
+
+                {/* Activity Heatmap */}
+                <ActivityHeatmap practiceHistory={practiceHistory} days={90} />
+            </div>
+
             {/* Charts Row */}
             <div className="grid lg:grid-cols-2 gap-6 mb-6">
                 <AccuracyChart data={practiceHistory} height={220} />
@@ -347,11 +406,6 @@ const Progress = () => {
                     learnedSigns={learnedSigns}
                     height={220}
                 />
-            </div>
-
-            {/* Activity Heatmap */}
-            <div className="mb-6">
-                <ActivityHeatmap practiceHistory={practiceHistory} days={90} />
             </div>
 
             {/* Bottom Row: Mastery + Learning Path */}
@@ -365,6 +419,14 @@ const Progress = () => {
 
             {/* Achievements */}
             <AchievementsSection unlockedAchievements={achievements} />
+
+            {/* Achievement Unlock Modal */}
+            <BadgeUnlockModal
+                isOpen={showUnlockModal}
+                onClose={() => setShowUnlockModal(false)}
+                badges={newlyUnlockedBadges}
+                onCollect={() => setShowUnlockModal(false)}
+            />
         </PageContainer>
     );
 };

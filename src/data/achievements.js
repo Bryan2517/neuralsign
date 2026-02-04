@@ -413,4 +413,14 @@ export function getAchievementCountByTier() {
     };
 }
 
+export const LEGACY_ID_MAP = {
+    'getting_started': 'alphabet_beginner',
+    'alphabet_half': 'alphabet_intermediate',
+    'streak_3': 'three_day_streak',
+    'streak_7': 'week_warrior',
+    'streak_30': 'month_master',
+    'perfect_practice': 'perfectionist', // Approximate
+    'speed_learner': 'quick_learner'     // Approximate
+};
+
 export default achievements;
