@@ -294,25 +294,33 @@ export const tierColors = {
         bg: 'from-amber-700/20 to-amber-900/20',
         border: 'border-amber-600/30',
         text: 'text-amber-500',
-        hex: '#CD7F32'
+        hex: '#CD7F32',
+        neonShadow: 'shadow-[0_0_10px_rgba(205,127,50,0.6),0_0_20px_rgba(205,127,50,0.4),inset_0_0_15px_rgba(205,127,50,0.2)]',
+        ring: 'ring-2 ring-amber-500/60'
     },
     silver: {
         bg: 'from-slate-400/20 to-slate-600/20',
         border: 'border-slate-400/50',
         text: 'text-slate-200',
-        hex: '#C0C0C0'
+        hex: '#C0C0C0',
+        neonShadow: 'shadow-[0_0_10px_rgba(192,192,192,0.7),0_0_20px_rgba(192,192,192,0.5),inset_0_0_15px_rgba(192,192,192,0.2)]',
+        ring: 'ring-2 ring-slate-300/70'
     },
     gold: {
         bg: 'from-yellow-500/20 to-yellow-700/20',
         border: 'border-yellow-500/30',
         text: 'text-yellow-400',
-        hex: '#FFD700'
+        hex: '#FFD700',
+        neonShadow: 'shadow-[0_0_12px_rgba(255,215,0,0.7),0_0_25px_rgba(255,215,0,0.4),inset_0_0_20px_rgba(255,215,0,0.15)]',
+        ring: 'ring-2 ring-yellow-400/70'
     },
     platinum: {
         bg: 'from-cyan-400/20 to-purple-500/20',
         border: 'border-cyan-400/30',
         text: 'text-cyan-300',
-        hex: '#E5E4E2'
+        hex: '#67E8F9',
+        neonShadow: 'shadow-[0_0_12px_rgba(103,232,249,0.6),0_0_25px_rgba(168,85,247,0.5),inset_0_0_20px_rgba(103,232,249,0.15)]',
+        ring: 'ring-2 ring-cyan-400/60'
     }
 };
 

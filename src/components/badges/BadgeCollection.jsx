@@ -78,7 +78,7 @@ const BadgeCollection = ({
                     {/* Scrollable Area */}
                     <div
                         ref={scrollContainerRef}
-                        className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide px-1"
+                        className="flex gap-5 overflow-x-auto py-4 px-2 scrollbar-hide"
                         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                     >
                         {achievements.map((badge) => (
@@ -142,19 +142,21 @@ const BadgeItem = ({ badge, isUnlocked, onClick, compact = false }) => {
 
             onClick={onClick}
             className={`
-                relative flex-shrink-0 cursor-pointer transition-all border
-                ${compact ? 'w-28 h-28 px-2 py-3' : 'p-3 aspect-square rounded-xl'}
-                ${isUnlocked
-                    ? `bg-gradient-to-br ${rarity.bg} ${rarity.border}`
-                    : 'bg-dark-700/50 border-dark-600 opacity-60'
-                }
+                relative flex-shrink-0 cursor-pointer transition-all
+                ${compact ? 'w-32 h-32 px-3 py-3' : 'p-3 aspect-square'}
                 ${compact ? 'rounded-lg' : 'rounded-xl'}
+                ${isUnlocked
+                    ? `bg-gradient-to-br ${rarity.bg} border-2 ${rarity.border.replace('border-', 'border-')} ${rarity.neonShadow}`
+                    : 'bg-dark-700/50 border border-dark-600 opacity-60'
+                }
             `}
+            style={isUnlocked ? {
+                borderColor: rarity.hex,
+                borderWidth: '2px'
+            } : {}}
         >
-
-
             <div className={`flex flex-col items-center justify-center gap-2 h-full text-center ${!isUnlocked && 'grayscale'}`}>
-                <div className={`text-3xl`}>{badge.icon}</div>
+                <div className="text-3xl">{badge.icon}</div>
 
                 <div className="w-full">
                     <h4 className={`text-xs font-medium mb-0.5 truncate w-full ${isUnlocked ? rarity.text : 'text-dark-200'}`}>
@@ -270,8 +272,16 @@ const BadgeDetailModal = ({ badge, isUnlocked, unlockedAt, onClose }) => {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
                 onClick={e => e.stopPropagation()}
-                className="w-full max-w-sm rounded-2xl overflow-hidden bg-gradient-to-b from-dark-800 to-dark-900 border border-dark-600"
-                style={{ borderColor: isUnlocked ? rarity.border.replace('border-', '') : undefined }} // Hacky fix for border color extraction if needed, usually handled by css class
+                className={`
+                    w-full max-w-sm rounded-2xl overflow-hidden 
+                    bg-gradient-to-b from-dark-800 to-dark-900 
+                    ${isUnlocked ? rarity.neonShadow : ''}
+                `}
+                style={{
+                    borderColor: isUnlocked ? rarity.hex : '#374151',
+                    borderWidth: isUnlocked ? '2px' : '1px',
+                    borderStyle: 'solid'
+                }}
             >
                 {/* Detail Content */}
                 <div className={`p-6 text-center ${isUnlocked ? `bg-gradient-to-br ${rarity.bg}` : 'bg-dark-700/50'}`}>

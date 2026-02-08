@@ -19,8 +19,8 @@ import Signup from '@/pages/Signup';
 import ResetPassword from '@/pages/ResetPassword';
 import Learn from '@/pages/Learn';
 import LetterDetail from '@/pages/LetterDetail';
+import LetterLearning from '@/pages/LetterLearning';
 import Practice from '@/pages/Practice';
-import PracticeMenu from '@/pages/PracticeMenu';
 import FreePractice from '@/pages/FreePractice';
 import FlashcardMode from '@/pages/FlashcardMode';
 import TimedChallenge from '@/pages/TimedChallenge';
@@ -191,18 +191,18 @@ function App() {
               }
             />
             <Route
-              path="/practice"
+              path="/learn/letter/:letter/practice"
               element={
                 <ProtectedRoute>
-                  <Practice />
+                  <LetterLearning />
                 </ProtectedRoute>
               }
             />
             <Route
-              path="/practice/menu"
+              path="/practice"
               element={
                 <ProtectedRoute>
-                  <PracticeMenu />
+                  <Practice />
                 </ProtectedRoute>
               }
             />

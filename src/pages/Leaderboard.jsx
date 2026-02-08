@@ -5,7 +5,7 @@
  * NeuralSign - AI Sign Language Learning Platform
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -32,27 +32,8 @@ import RankCard from '@/components/leaderboard/RankCard';
 // Store
 import useAuthStore from '@/store/authStore';
 
-// Mock data for demonstration (will be replaced with Firestore data)
-const generateMockLeaderboard = (count = 50) => {
-    const names = ['Alex', 'Jamie', 'Jordan', 'Taylor', 'Morgan', 'Casey', 'Riley', 'Quinn', 'Avery', 'Sage'];
-    const suffixes = ['Pro', 'Star', 'Master', 'Learner', 'Expert', 'Ace', '', 'Jr', 'Sr', 'X'];
-
-    return Array.from({ length: count }, (_, i) => ({
-        id: `user_${i}`,
-        displayName: `${names[i % names.length]}${suffixes[Math.floor(i / names.length) % suffixes.length]}`,
-        xp: Math.floor(5000 - i * 80 + Math.random() * 50),
-        signsLearned: Math.floor(26 - i * 0.3 + Math.random() * 3),
-        streak: Math.floor(50 - i * 0.8 + Math.random() * 5),
-        weeklyXP: Math.floor(500 - i * 8 + Math.random() * 20),
-        rank: i + 1
-    })).map(user => ({
-        ...user,
-        signsLearned: Math.min(Math.max(user.signsLearned, 0), 26),
-        streak: Math.max(user.streak, 0),
-        xp: Math.max(user.xp, 0),
-        weeklyXP: Math.max(user.weeklyXP, 0)
-    }));
-};
+// Services
+import { subscribeToLeaderboard, getLeaderboard, findUserRank } from '@/services/leaderboardService';
 
 const Leaderboard = () => {
     const navigate = useNavigate();
@@ -63,64 +44,48 @@ const Leaderboard = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [userRank, setUserRank] = useState(null);
 
-    // Load leaderboard data
-    useEffect(() => {
-        loadLeaderboard();
-    }, [activeTab]);
+    // Process leaderboard data and mark current user
+    const processLeaderboardData = useCallback((data) => {
+        const processedData = data.map(entry => ({
+            ...entry,
+            isCurrentUser: user && entry.id === user.uid,
+        }));
 
+        // Find and set user's rank
+        if (user) {
+            const userEntry = findUserRank(user.uid, processedData);
+            setUserRank(userEntry);
+        } else {
+            setUserRank(null);
+        }
+
+        setLeaderboardData(processedData);
+        setIsLoading(false);
+    }, [user]);
+
+    // Subscribe to realtime leaderboard updates
+    useEffect(() => {
+        setIsLoading(true);
+
+        // Subscribe to realtime updates
+        const unsubscribe = subscribeToLeaderboard(activeTab, processLeaderboardData, 50);
+
+        // Cleanup subscription on unmount or when activeTab changes
+        return () => {
+            if (unsubscribe) {
+                unsubscribe();
+            }
+        };
+    }, [activeTab, processLeaderboardData]);
+
+    // Manual refresh function
     const loadLeaderboard = async () => {
         setIsLoading(true);
         try {
-            // TODO: Replace with actual Firestore queries
-            // For now, use mock data
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            const mockData = generateMockLeaderboard(50);
-
-            // Insert current user at a random position if logged in
-            if (user) {
-                const userEntry = {
-                    id: user.uid,
-                    displayName: userData?.displayName || 'You',
-                    xp: userData?.xp?.total || userData?.progress?.totalXP || 0,
-                    signsLearned: userData?.learnedSigns?.length || 0,
-                    streak: userData?.streak?.current || userData?.progress?.streak || 0,
-                    weeklyXP: Math.floor((userData?.xp?.total || 0) * 0.1),
-                    isCurrentUser: true
-                };
-
-                // Sort and find user's rank
-                let sortedData;
-                switch (activeTab) {
-                    case 'signs':
-                        sortedData = [...mockData, userEntry].sort((a, b) => b.signsLearned - a.signsLearned);
-                        break;
-                    case 'streak':
-                        sortedData = [...mockData, userEntry].sort((a, b) => b.streak - a.streak);
-                        break;
-                    case 'weekly':
-                        sortedData = [...mockData, userEntry].sort((a, b) => b.weeklyXP - a.weeklyXP);
-                        break;
-                    default:
-                        sortedData = [...mockData, userEntry].sort((a, b) => b.xp - a.xp);
-                }
-
-                // Assign ranks
-                sortedData.forEach((entry, index) => {
-                    entry.rank = index + 1;
-                    if (entry.isCurrentUser) {
-                        setUserRank(entry);
-                    }
-                });
-
-                setLeaderboardData(sortedData.slice(0, 50));
-            } else {
-                setLeaderboardData(mockData);
-                setUserRank(null);
-            }
+            const data = await getLeaderboard(activeTab, 50);
+            processLeaderboardData(data);
         } catch (error) {
             console.error('Error loading leaderboard:', error);
-        } finally {
             setIsLoading(false);
         }
     };
@@ -283,10 +248,18 @@ const Leaderboard = () => {
                                             <div className="text-3xl mb-2">
                                                 {entry.rank === 1 ? '👑' : entry.rank === 2 ? '🥈' : '🥉'}
                                             </div>
-                                            <div className="w-12 h-12 mx-auto rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center mb-2">
-                                                <span className="text-lg font-bold text-white">
-                                                    {entry.displayName.charAt(0).toUpperCase()}
-                                                </span>
+                                            <div className="w-12 h-12 mx-auto rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center mb-2 overflow-hidden">
+                                                {entry.photoURL ? (
+                                                    <img
+                                                        src={entry.photoURL}
+                                                        alt={entry.displayName}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <span className="text-lg font-bold text-white">
+                                                        {entry.displayName.charAt(0).toUpperCase()}
+                                                    </span>
+                                                )}
                                             </div>
                                             <h4 className={`font-medium truncate ${entry.isCurrentUser ? 'text-primary' : 'text-dark-100'}`}>
                                                 {entry.isCurrentUser ? 'You' : entry.displayName}
@@ -307,6 +280,7 @@ const Leaderboard = () => {
                                     key={entry.id}
                                     rank={entry.rank}
                                     displayName={entry.displayName}
+                                    photoURL={entry.photoURL}
                                     value={getMetricValue(entry)}
                                     label={getMetricLabel()}
                                     isCurrentUser={entry.isCurrentUser}

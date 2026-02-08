@@ -463,7 +463,7 @@ const FlashcardMode = () => {
                     results={results}
                     onRetry={handleRetry}
                     onReviewMistakes={handleReviewMistakes}
-                    onExit={() => navigate('/practice/menu')}
+                    onExit={() => navigate('/practice')}
                 />
             </PageContainer>
         );
@@ -479,7 +479,7 @@ const FlashcardMode = () => {
             >
                 <Button
                     variant="ghost"
-                    onClick={() => navigate('/practice/menu')}
+                    onClick={() => navigate('/practice')}
                     leftIcon={<ArrowLeft className="w-4 h-4" />}
                 >
                     Exit

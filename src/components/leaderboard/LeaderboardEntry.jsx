@@ -14,6 +14,7 @@ const LeaderboardEntry = ({
     value,
     label = 'XP',
     isCurrentUser = false,
+    photoURL = null,
     index = 0
 }) => {
     // Get rank icon for top 3
@@ -57,11 +58,25 @@ const LeaderboardEntry = ({
 
             {/* Avatar */}
             <div className={`
-        w-10 h-10 rounded-full flex items-center justify-center
-        bg-gradient-to-br ${getAvatarGradient()}
+        w-10 h-10 rounded-full flex items-center justify-center overflow-hidden
+        ${!photoURL ? `bg-gradient-to-br ${getAvatarGradient()}` : ''}
         ${isCurrentUser ? 'ring-2 ring-primary ring-offset-1 ring-offset-dark-800' : ''}
       `}>
-                <span className="text-sm font-bold text-white">
+                {photoURL ? (
+                    <img
+                        src={photoURL}
+                        alt={displayName}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                        }}
+                    />
+                ) : null}
+                <span
+                    className={`text-sm font-bold text-white ${photoURL ? 'hidden' : ''}`}
+                    style={{ display: photoURL ? 'none' : 'flex' }}
+                >
                     {displayName.charAt(0).toUpperCase()}
                 </span>
             </div>

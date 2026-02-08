@@ -38,6 +38,7 @@ import BadgeCollection from '@/components/badges/BadgeCollection';
 // Services
 import { getUserAchievements } from '@/services/database';
 import { checkAndUnlockAchievements } from '@/services/achievementService';
+import { subscribeToLeaderboard, findUserRank } from '@/services/leaderboardService';
 
 // Store
 import useAuthStore from '@/store/authStore';
@@ -162,6 +163,25 @@ const Progress = () => {
     const [achievements, setAchievements] = useState([]);
     const [showUnlockModal, setShowUnlockModal] = useState(false);
     const [newlyUnlockedBadges, setNewlyUnlockedBadges] = useState([]);
+
+    // Leaderboard state for real-time ranking
+    const [userRank, setUserRank] = useState(null);
+    const [totalUsers, setTotalUsers] = useState(0);
+
+    // Subscribe to real-time leaderboard for user ranking
+    useEffect(() => {
+        if (!user?.uid) return;
+
+        const unsubscribe = subscribeToLeaderboard('xp', (leaderboardData) => {
+            setTotalUsers(leaderboardData.length);
+            const rankEntry = findUserRank(user.uid, leaderboardData);
+            setUserRank(rankEntry);
+        }, 100); // Get top 100 to find user rank
+
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
+    }, [user?.uid]);
 
     // Load achievements with sync
     useEffect(() => {
@@ -295,7 +315,7 @@ const Progress = () => {
                     </div>
                     <Button
                         variant="primary"
-                        onClick={() => navigate('/practice/menu')}
+                        onClick={() => navigate('/practice')}
                         rightIcon={<ChevronRight className="w-4 h-4" />}
                     >
                         Practice Now
@@ -368,9 +388,9 @@ const Progress = () => {
                     title="View full leaderboard"
                 >
                     <RankCard
-                        rank={Math.floor(Math.random() * 50) + 1}
-                        totalUsers={150}
-                        value={totalXP}
+                        rank={userRank?.rank || 0}
+                        totalUsers={totalUsers}
+                        value={userRank?.xp || totalXP}
                         metric="xp"
                     />
                 </div>

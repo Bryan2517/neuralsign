@@ -430,7 +430,7 @@ const TimedChallenge = () => {
             <PageContainer>
                 <Button
                     variant="ghost"
-                    onClick={() => navigate('/practice/menu')}
+                    onClick={() => navigate('/practice')}
                     leftIcon={<ArrowLeft className="w-4 h-4" />}
                     className="mb-4"
                 >
@@ -471,7 +471,7 @@ const TimedChallenge = () => {
                         personalBest
                     }}
                     onRetry={handleRetry}
-                    onExit={() => navigate('/practice/menu')}
+                    onExit={() => navigate('/practice')}
                 />
             </PageContainer>
         );

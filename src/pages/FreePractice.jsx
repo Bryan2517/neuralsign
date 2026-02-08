@@ -293,7 +293,7 @@ const FreePractice = () => {
             >
                 <Button
                     variant="ghost"
-                    onClick={() => navigate('/practice/menu')}
+                    onClick={() => navigate('/practice')}
                     leftIcon={<ArrowLeft className="w-4 h-4" />}
                 >
                     Practice Menu
