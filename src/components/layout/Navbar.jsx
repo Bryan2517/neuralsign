@@ -41,7 +41,7 @@ const navItems = [
 // User dropdown menu items
 const userMenuItems = [
     { label: 'Profile', path: '/profile', icon: User },
-    { label: 'Settings', path: '#', icon: Settings, disabled: true },
+    { label: 'Settings', path: '/settings', icon: Settings },
 ];
 
 const Navbar = () => {
