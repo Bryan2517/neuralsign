@@ -33,9 +33,12 @@ import useAuthStore from '@/store/authStore';
 
 // Data & Services
 import { getSignByLetter, alphabetSigns } from '@/data/signsData';
+import { addLearnedSign } from '@/services/database';
 
 // Lazy load 3D viewer
 const ModelViewer = lazy(() => import('@/components/3d/ModelViewer'));
+
+import SuccessPopup from '@/components/feedback/SuccessPopup';
 
 /**
  * Tips panel component
@@ -77,7 +80,7 @@ const TipsPanel = ({ signData }) => {
 const LetterLearning = () => {
     const { letter } = useParams();
     const navigate = useNavigate();
-    const { user } = useAuthStore();
+    const { user, refreshUserData } = useAuthStore();
     const { handleXPResult } = useLevelUp();
 
     // Normalize letter to uppercase
@@ -85,7 +88,10 @@ const LetterLearning = () => {
 
     // State
     const [isPracticing, setIsPracticing] = useState(false);
+    const [showSuccessPopup, setShowSuccessPopup] = useState(false);
     const hasStartedRef = useRef(false);
+    const resultRef = useRef(null);
+    const cameraRef = useRef(null);
 
     // Get sign data
     const signData = getSignByLetter(targetLetter);
@@ -113,8 +119,35 @@ const LetterLearning = () => {
         clearValidation
     } = useHandDetection({
         targetLetter,
-        onValidationResult: (result) => {
+        onValidationResult: async (result) => {
             console.log('Validation result:', result);
+            if (result.isCorrect) {
+                setShowSuccessPopup(true);
+
+                // Save progress to database
+                if (user?.uid) {
+                    try {
+                        const { xpResult, isNew } = await addLearnedSign(user.uid, targetLetter);
+
+                        // Handle XP / Level up
+                        if (xpResult) {
+                            handleXPResult(xpResult);
+                        }
+
+                        // Refresh user data if it was a new sign
+                        if (isNew) {
+                            refreshUserData();
+                        }
+                    } catch (error) {
+                        console.error('Failed to save progress:', error);
+                    }
+                }
+            }
+
+            // Scroll to result section after a short delay to ensure rendering
+            setTimeout(() => {
+                resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
         }
     });
 
@@ -160,6 +193,10 @@ const LetterLearning = () => {
     // Handle try again
     const handleTryAgain = useCallback(() => {
         clearValidation();
+        // Scroll back to camera
+        setTimeout(() => {
+            cameraRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
     }, [clearValidation]);
 
     // Navigate to previous letter
@@ -224,7 +261,7 @@ const LetterLearning = () => {
             {/* Main content - two column layout */}
             <div className="grid lg:grid-cols-2 gap-6">
                 {/* Left column: Camera + Validate button */}
-                <div className="space-y-4">
+                <div ref={cameraRef} className="space-y-4">
                     {/* Camera feed */}
                     <CameraFeed
                         videoRef={videoRef}
@@ -320,7 +357,7 @@ const LetterLearning = () => {
             </div>
 
             {/* Bottom section: Score and Tips */}
-            <div className="grid lg:grid-cols-2 gap-6 mt-6">
+            <div ref={resultRef} className="grid lg:grid-cols-2 gap-6 mt-6">
                 {/* Validation feedback / Score */}
                 <ValidationFeedback
                     result={validationResult}
@@ -333,6 +370,14 @@ const LetterLearning = () => {
 
                 {/* Tips panel */}
                 <TipsPanel signData={signData} />
+
+                {/* Success Popup */}
+                <SuccessPopup
+                    isOpen={showSuccessPopup}
+                    onClose={() => setShowSuccessPopup(false)}
+                    letter={targetLetter}
+                    score={validationResult?.accuracy}
+                />
             </div>
         </PageContainer>
     );
