@@ -48,6 +48,8 @@ import useAuthStore from '@/store/authStore';
 // Data
 import { getSignByLetter } from '@/data/signsData';
 
+import SuccessPopup from '@/components/feedback/SuccessPopup';
+
 // Lazy load 3D viewer
 const ModelViewer = lazy(() => import('@/components/3d/ModelViewer'));
 
@@ -223,7 +225,10 @@ const Practice = () => {
 
     // Practice state
     const [isPracticing, setIsPracticing] = useState(false);
+    const [showSuccessPopup, setShowSuccessPopup] = useState(false);
     const hasStartedRef = useRef(false);
+    const resultRef = useRef(null);
+    const cameraRef = useRef(null);
 
     // Level up context
     const { handleXPResult } = useLevelUp();
@@ -268,7 +273,19 @@ const Practice = () => {
     } = useHandDetection({
         targetLetter,
         onCorrectSign: handleCorrectSign,
-        onValidationResult: handleValidationResult
+        onValidationResult: async (result) => {
+            // Call the original handler from usePractice
+            await handleValidationResult(result);
+
+            if (result?.isCorrect) {
+                setShowSuccessPopup(true);
+            }
+
+            // Scroll to result section after a short delay
+            setTimeout(() => {
+                resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        }
     });
 
     // Get sign data for current letter
@@ -350,6 +367,10 @@ const Practice = () => {
      */
     const handleTryAgain = useCallback(() => {
         clearValidation();
+        // Scroll back to camera
+        setTimeout(() => {
+            cameraRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
     }, [clearValidation]);
 
     /**
@@ -605,7 +626,7 @@ const Practice = () => {
                 {/* Main content - two column layout */}
                 <div className="grid lg:grid-cols-2 gap-6">
                     {/* Left column: Camera + Controls */}
-                    <div className="space-y-4">
+                    <div ref={cameraRef} className="space-y-4">
                         {/* Camera feed */}
                         <CameraFeed
                             videoRef={videoRef}
@@ -670,7 +691,7 @@ const Practice = () => {
                     </div>
 
                     {/* Right column: Target + Feedback + Stats */}
-                    <div className="space-y-4">
+                    <div ref={resultRef} className="space-y-4">
                         {/* Target letter display */}
                         <motion.div
                             key={targetLetter}
@@ -688,6 +709,14 @@ const Practice = () => {
                                 </div>
                             )}
                         </motion.div>
+
+                        {/* Success Popup */}
+                        <SuccessPopup
+                            isOpen={showSuccessPopup}
+                            onClose={() => setShowSuccessPopup(false)}
+                            letter={targetLetter}
+                            score={validationResult?.accuracy || 0}
+                        />
 
                         {/* 3D Model (optional) */}
                         <Suspense fallback={
