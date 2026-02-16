@@ -74,29 +74,33 @@ const GLTFModel = memo(({ modelPath, scale = 1, onLoad }) => {
     // useGLTF suspends while loading (handled by Suspense in parent)
     // Enable draco decoder from CDN for compressed models
     const { scene } = useGLTF(modelPath, true);
+    // Clone the scene to avoid mutating the cached object
+    // usage of useMemo ensures we only clone when the scene or path changes
+    const clonedScene = React.useMemo(() => scene.clone(true), [scene]);
+
     const modelRef = useRef();
     const hasCalledOnLoad = useRef(false);
 
     // Apply materials and shadows, and normalize scale on load
     useEffect(() => {
-        if (scene && !hasCalledOnLoad.current) {
+        if (clonedScene && !hasCalledOnLoad.current) {
             hasCalledOnLoad.current = true;
 
             // Calculate bounding box to normalize model size
-            const box = new THREE.Box3().setFromObject(scene);
+            const box = new THREE.Box3().setFromObject(clonedScene);
             const size = box.getSize(new THREE.Vector3());
             const maxDim = Math.max(size.x, size.y, size.z);
 
             // Normalize to fit in a 2x2x2 box
             const normalizeScale = maxDim > 0 ? 2 / maxDim : 1;
-            scene.scale.setScalar(normalizeScale * scale);
+            clonedScene.scale.setScalar(normalizeScale * scale);
 
             // Center the model
             const center = box.getCenter(new THREE.Vector3());
-            scene.position.sub(center.multiplyScalar(normalizeScale * scale));
+            clonedScene.position.sub(center.multiplyScalar(normalizeScale * scale));
 
             // Apply materials and shadows to all meshes
-            scene.traverse((child) => {
+            clonedScene.traverse((child) => {
                 if (child.isMesh) {
                     child.castShadow = true;
                     child.receiveShadow = true;
@@ -110,15 +114,15 @@ const GLTFModel = memo(({ modelPath, scale = 1, onLoad }) => {
             console.log('✅ Model loaded and normalized:', modelPath, 'scale:', normalizeScale);
             onLoad?.();
         }
-    }, [scene, scale, modelPath, onLoad]);
+    }, [clonedScene, scale, modelPath, onLoad]);
 
-    if (!scene) {
+    if (!clonedScene) {
         return null;
     }
 
     return (
         <group ref={modelRef}>
-            <primitive object={scene} />
+            <primitive object={clonedScene} />
         </group>
     );
 });

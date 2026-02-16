@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Hand,
@@ -220,8 +220,18 @@ const Practice = () => {
     const { userData } = useAuthStore();
     const learnedCount = userData?.learnedSigns?.length || 0;
 
+    const [searchParams] = useSearchParams();
+    const letterParam = searchParams.get('letter');
+
     // Tab state
     const [activeTab, setActiveTab] = useState('modes'); // 'modes' or 'practice'
+
+    // Handle initial redirect from Learn page
+    useEffect(() => {
+        if (letterParam) {
+            setActiveTab('practice');
+        }
+    }, [letterParam]);
 
     // Practice state
     const [isPracticing, setIsPracticing] = useState(false);
@@ -428,6 +438,13 @@ const Practice = () => {
             clearLastXPResult();
         }
     }, [lastXPResult, handleXPResult, clearLastXPResult]);
+
+    // Sync target letter from URL
+    useEffect(() => {
+        if (letterParam) {
+            setTargetLetter(letterParam);
+        }
+    }, [letterParam, setTargetLetter]);
 
     // ============= RENDER: PRACTICE MODES TAB =============
     const renderPracticeModesTab = () => (
