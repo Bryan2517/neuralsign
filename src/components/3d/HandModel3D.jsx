@@ -202,6 +202,12 @@ const ModelContent = memo(({
         }
     });
 
+    // Reset error state when model changes
+    useEffect(() => {
+        setModelFailed(false);
+        pendingErrorRef.current = null;
+    }, [modelPath, letter]);
+
     // Letter-based color palette
     const letterColors = {
         A: '#6366F1', B: '#8B5CF6', C: '#EC4899', D: '#10B981',

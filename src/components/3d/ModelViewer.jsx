@@ -88,6 +88,12 @@ const ModelViewer = memo(({
         }
     }, []);
 
+    // Reset state when letter changes
+    useEffect(() => {
+        setIsLoading(true);
+        setHasError(false);
+    }, [letter]);
+
     // Simulate model load completion (since we're using placeholder)
     // In production, this would be called by the actual model loader
     useEffect(() => {
@@ -154,36 +160,39 @@ const ModelViewer = memo(({
         sm:min-h-[400px]
         lg:min-h-[500px]
       ">
-                <AnimatePresence mode="wait">
-                    {isLoading ? (
-                        <motion.div
-                            key="loading"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="w-full h-full"
-                        >
-                            <ModelLoadingState message={`Loading ${letter}...`} />
-                        </motion.div>
-                    ) : hasError ? (
-                        <motion.div
-                            key="error"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="w-full h-full"
-                        >
-                            <ModelErrorState onRetry={handleRetry} />
-                        </motion.div>
-                    ) : (
+                <div className="relative w-full h-full">
+                    <AnimatePresence mode="wait">
+                        {hasError ? (
+                            <motion.div
+                                key="error"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="absolute inset-0 z-20 bg-dark-800"
+                            >
+                                <ModelErrorState onRetry={handleRetry} />
+                            </motion.div>
+                        ) : isLoading ? (
+                            <motion.div
+                                key="loading"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="absolute inset-0 z-20 bg-dark-800"
+                            >
+                                <ModelLoadingState message={`Loading ${letter}...`} />
+                            </motion.div>
+                        ) : null}
+                    </AnimatePresence>
+
+                    {!hasError && (
                         <motion.div
                             key="model"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
                             className="w-full h-full"
                         >
-                            <Suspense fallback={<ModelLoadingState message="Initializing 3D..." />}>
+                            <Suspense fallback={null}>
                                 <HandModel3D
                                     modelPath={modelPath}
                                     letter={letter}
@@ -195,7 +204,7 @@ const ModelViewer = memo(({
                             </Suspense>
                         </motion.div>
                     )}
-                </AnimatePresence>
+                </div>
             </div>
 
             {/* Controls Toolbar */}
