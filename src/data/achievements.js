@@ -282,6 +282,80 @@ export const achievements = [
         tier: 'silver',
         xpReward: 60,
         criteria: { type: 'dailyChallenges', value: 7 }
+    },
+
+    // ============================================
+    // WORD SIGN ACHIEVEMENTS
+    // ============================================
+    {
+        id: 'first_word',
+        name: 'First Word',
+        description: 'Learn your first word sign',
+        icon: '🔤',
+        category: 'words',
+        tier: 'bronze',
+        xpReward: 15,
+        criteria: { type: 'wordsLearned', value: 1 }
+    },
+    {
+        id: 'five_words',
+        name: 'Word Explorer',
+        description: 'Learn 5 word signs',
+        icon: '📖',
+        category: 'words',
+        tier: 'bronze',
+        xpReward: 30,
+        criteria: { type: 'wordsLearned', value: 5 }
+    },
+    {
+        id: 'ten_words',
+        name: 'Word Builder',
+        description: 'Learn 10 word signs',
+        icon: '🔠',
+        category: 'words',
+        tier: 'silver',
+        xpReward: 50,
+        criteria: { type: 'wordsLearned', value: 10 }
+    },
+    {
+        id: 'twenty_words',
+        name: 'Vocabulary Master',
+        description: 'Learn all 20 word signs',
+        icon: '🏅',
+        category: 'words',
+        tier: 'gold',
+        xpReward: 100,
+        criteria: { type: 'wordsLearned', value: 20 }
+    },
+    {
+        id: 'category_complete',
+        name: 'Category Champion',
+        description: 'Complete all words in any category',
+        icon: '🏆',
+        category: 'words',
+        tier: 'silver',
+        xpReward: 40,
+        criteria: { type: 'categoryComplete', value: 1 }
+    },
+    {
+        id: 'word_accuracy_90',
+        name: 'Word Sharpshooter',
+        description: 'Achieve 90%+ accuracy on 5 word signs',
+        icon: '🎯',
+        category: 'words',
+        tier: 'gold',
+        xpReward: 60,
+        criteria: { type: 'wordAccuracy90', value: 5 }
+    },
+    {
+        id: 'all_categories',
+        name: 'Well-Rounded',
+        description: 'Learn at least one word from every category',
+        icon: '🌟',
+        category: 'words',
+        tier: 'silver',
+        xpReward: 45,
+        criteria: { type: 'allCategoriesStarted', value: 4 }
     }
 ];
 
@@ -363,6 +437,11 @@ export const categories = {
         name: 'Special',
         icon: '✨',
         color: 'text-purple-400'
+    },
+    words: {
+        name: 'Words',
+        icon: '🔤',
+        color: 'text-indigo-400'
     }
 };
 

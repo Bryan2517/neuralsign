@@ -210,6 +210,37 @@ function checkAchievementCriteria(achievement, userProfile) {
             // Need challenge tracking
             return (progress.challengesCompleted || 0) >= criteria.value;
 
+        // Word sign achievements
+        case 'wordsLearned': {
+            const wordsProgress = userProfile.wordsProgress || {};
+            const learnedWordsList = wordsProgress.learned || [];
+            return learnedWordsList.length >= criteria.value;
+        }
+
+        case 'categoryComplete': {
+            const wp = userProfile.wordsProgress || {};
+            const catProgress = wp.categoryProgress || {};
+            const completedCategories = Object.values(catProgress)
+                .filter(c => c.percentage === 100).length;
+            return completedCategories >= criteria.value;
+        }
+
+        case 'wordAccuracy90': {
+            const wp2 = userProfile.wordsProgress || {};
+            const accData = wp2.accuracy || {};
+            const highAccuracyCount = Object.values(accData)
+                .filter(a => a.avg >= 90).length;
+            return highAccuracyCount >= criteria.value;
+        }
+
+        case 'allCategoriesStarted': {
+            const wp3 = userProfile.wordsProgress || {};
+            const catProg = wp3.categoryProgress || {};
+            const startedCategories = Object.values(catProg)
+                .filter(c => c.learned > 0).length;
+            return startedCategories >= criteria.value;
+        }
+
         default:
             console.warn(`⚠️ Unknown criteria type: ${criteria.type}`);
             return false;

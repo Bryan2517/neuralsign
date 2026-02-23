@@ -31,6 +31,8 @@ import Profile from '@/pages/Profile';
 import Leaderboard from '@/pages/Leaderboard';
 import XPHistory from '@/pages/XPHistory';
 import Settings from '@/pages/Settings';
+import WordDetail from '@/pages/WordDetail';
+import PracticeWords from '@/pages/PracticeWords';
 
 // Components
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -254,6 +256,22 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <PracticeHistory />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/learn/words/:wordId"
+                element={
+                  <ProtectedRoute>
+                    <WordDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/practice/words/:wordId?"
+                element={
+                  <ProtectedRoute>
+                    <PracticeWords />
                   </ProtectedRoute>
                 }
               />

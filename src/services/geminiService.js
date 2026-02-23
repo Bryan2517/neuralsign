@@ -207,14 +207,17 @@ export async function validateHandSign(imageBase64, targetLetter) {
 
     console.log(`🔍 Validating sign for letter "${targetLetter}"...`);
 
-    // Construct the prompt for Gemini - More lenient for learning
+    // Construct the prompt for Gemini - Very lenient for learning
     const prompt = `You are a friendly, encouraging sign language teacher helping a beginner learn ASL.
 The user is trying to make the ASL (American Sign Language) letter "${targetLetter}".
 
-IMPORTANT: Be LENIENT and FORGIVING in your grading. This is for learning, not a strict test.
-- If the general hand shape is recognizable as the letter, give high accuracy (70-90%)
-- Only give low accuracy if the sign is completely wrong or no hand is visible
+IMPORTANT: Be VERY LENIENT and FORGIVING in your grading. This is for learning, not a strict test.
+Remember these are beginners using a webcam - angles, lighting, and minor imperfections are NORMAL.
+- If the general hand shape is roughly recognizable as the letter, give HIGH accuracy (80-95%)
+- If the hand shape is close but has minor issues (slightly wrong finger position, angle, etc), still give good accuracy (65-80%)
+- Only give low accuracy (below 50) if the sign is completely wrong or no hand is visible
 - Focus on what they're doing RIGHT, not just what's wrong
+- When in doubt, give the learner the benefit of the doubt and round UP
 
 Respond with ONLY a valid JSON object in exactly this format (no additional text, no markdown, no code blocks):
 {
@@ -225,12 +228,13 @@ Respond with ONLY a valid JSON object in exactly this format (no additional text
 }
 
 Rules for your response:
-- isCorrect should be true if accuracy is 60 or above (lenient threshold for learners)
+- isCorrect should be true if accuracy is 50 or above (very lenient threshold for learners)
 - Be very encouraging and positive, even when the sign needs improvement
 - Acknowledge effort and progress
 - Suggestions should be gentle and constructive
 - If no hand is detected, set accuracy to 0 and feedback to "No hand detected. Please show your hand clearly."
-- If hand is partially visible or at an angle, still try to give credit for effort
+- If hand is partially visible or at an angle, still try to give credit for effort (at least 50-60% accuracy)
+- Webcam distortion and angles should NOT significantly penalize the score
 - Respond with ONLY the JSON object, nothing else`;
 
     // Retry logic with exponential backoff
@@ -335,7 +339,7 @@ function validateAndNormalizeResult(result) {
     return {
         isCorrect: typeof result.isCorrect === 'boolean'
             ? result.isCorrect
-            : (result.accuracy >= 80),
+            : (result.accuracy >= 50),
         accuracy: typeof result.accuracy === 'number'
             ? Math.max(0, Math.min(100, Math.round(result.accuracy)))
             : 0,
@@ -562,10 +566,12 @@ export async function validateSentenceSign(imageBase64, targetWord, fullSentence
 
     console.log(`🔍 Validating sign for word "${targetWord}" in sentence context...`);
 
-    const prompt = `You are a sign language expert analyzing a hand sign in the context of a sentence.
+    const prompt = `You are a friendly sign language expert analyzing a hand sign in the context of a sentence.
 The user is signing the word "${targetWord}" as part of the sentence: "${fullSentence}"
 
 Since this word is being fingerspelled, check if the user is making the correct hand shape for the letter(s) in "${targetWord}".
+
+IMPORTANT: Be VERY LENIENT. This is a learning app, not an exam. Webcam angles and lighting can affect appearance.
 
 Analyze the hand position and respond with ONLY a valid JSON object:
 {
@@ -576,11 +582,13 @@ Analyze the hand position and respond with ONLY a valid JSON object:
 }
 
 Rules:
-- isCorrect = true if accuracy >= 80
-- Be encouraging and specific
+- isCorrect = true if accuracy >= 50 (lenient for learners)
+- Be encouraging and specific, focus on what they're doing right
+- If the general hand shape is recognizable, give high accuracy (80-95%)
 - Consider that context matters - some words can be signed differently depending on sentence meaning
 - If no hand is detected, set accuracy to 0
-- For fingerspelling, focus on the letter shapes being correct
+- For fingerspelling, focus on the general letter shapes being recognizable
+- Webcam distortion and angles should NOT significantly penalize the score
 
 Respond with ONLY the JSON object, nothing else.`;
 
