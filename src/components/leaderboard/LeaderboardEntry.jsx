@@ -67,6 +67,7 @@ const LeaderboardEntry = ({
                         src={photoURL}
                         alt={displayName}
                         className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
                         onError={(e) => {
                             e.target.style.display = 'none';
                             e.target.nextSibling.style.display = 'flex';

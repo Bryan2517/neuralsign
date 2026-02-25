@@ -254,6 +254,8 @@ const Leaderboard = () => {
                                                         src={entry.photoURL}
                                                         alt={entry.displayName}
                                                         className="w-full h-full object-cover"
+                                                        referrerPolicy="no-referrer"
+                                                        onError={(e) => { e.target.style.display = 'none'; }}
                                                     />
                                                 ) : (
                                                     <span className="text-lg font-bold text-white">

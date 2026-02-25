@@ -177,9 +177,10 @@ const useAuthStore = create(
                 set({ isLoading: true, error: null });
 
                 try {
-                    await signIn(email, password);
+                    const userCredential = await signIn(email, password);
                     // Auth state will be updated by onAuthStateChanged listener
                     console.log('✅ Login successful');
+                    return userCredential;
                 } catch (error) {
                     set({
                         error: error.message,

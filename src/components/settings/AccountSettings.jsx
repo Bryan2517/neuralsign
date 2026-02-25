@@ -57,7 +57,7 @@ const AccountSettings = () => {
                     <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-secondary p-0.5">
                         <div className="w-full h-full rounded-full bg-dark-800 flex items-center justify-center overflow-hidden">
                             {user?.photoURL ? (
-                                <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
+                                <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" onError={(e) => { e.target.style.display = 'none'; }} />
                             ) : (
                                 <span className="text-2xl font-bold gradient-text">{userInitials}</span>
                             )}

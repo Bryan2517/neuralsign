@@ -36,13 +36,28 @@ import PracticeWords from '@/pages/PracticeWords';
 
 // Components
 import ProtectedRoute from '@/components/ProtectedRoute';
+import ProtectedAdminRoute from '@/components/admin/ProtectedAdminRoute';
 
 // Context
 import { LevelUpProvider } from '@/context/LevelUpContext';
 import { SettingsProvider } from '@/context/SettingsContext';
+import { AdminProvider, useAdmin } from '@/context/AdminContext';
+
+// Admin Pages
+import AdminDashboard from '@/pages/admin/AdminDashboard';
+import WordsManagement from '@/pages/admin/WordsManagement';
+import WordEditor from '@/pages/admin/WordEditor';
+import CategoriesManagement from '@/pages/admin/CategoriesManagement';
+import BulkUpload from '@/pages/admin/BulkUpload';
+import UsersManagement from '@/pages/admin/UsersManagement';
+import Analytics from '@/pages/admin/Analytics';
+import SystemSettings from '@/pages/admin/SystemSettings';
 
 // Store
 import useAuthStore from '@/store/authStore';
+
+// Scripts
+import '@/scripts/setupAdmin';
 
 // Console branding
 console.log(`
@@ -86,15 +101,17 @@ const GlobalLoadingScreen = () => (
  * Redirects to home if user is already authenticated
  */
 const AuthRoute = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuthStore();
+  const { isAuthenticated, isLoading: authLoading } = useAuthStore();
+  const { isAdmin, loading: adminLoading } = useAdmin();
 
-  // Don't redirect while loading
-  if (isLoading) {
+  // Don't redirect while loading auth or admin status
+  if (authLoading || adminLoading) {
     return children;
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/learn" replace />;
+    // Redirect admins to dashboard, users to learn
+    return <Navigate to={isAdmin ? "/admin" : "/learn"} replace />;
   }
 
   return children;
@@ -137,191 +154,209 @@ function App() {
 
   return (
     <SettingsProvider>
-      <LevelUpProvider>
-        <Router>
-          <AppLayout>
+      <AdminProvider>
+        <LevelUpProvider>
+          <Router>
             <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<Home />} />
+              {/* Admin Routes (separate layout, no Navbar/Footer) */}
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedAdminRoute>
+                    <AdminDashboard />
+                  </ProtectedAdminRoute>
+                }
+              >
+                <Route path="words" element={<WordsManagement />} />
+                <Route path="words/new" element={<WordEditor />} />
+                <Route path="words/:wordId/edit" element={<WordEditor />} />
+                <Route path="categories" element={<CategoriesManagement />} />
+                <Route path="upload" element={<BulkUpload />} />
+                <Route path="users" element={<UsersManagement />} />
+                <Route path="analytics" element={<Analytics />} />
+                <Route path="settings" element={<SystemSettings />} />
+              </Route>
 
-              {/* Auth Routes (redirect if already logged in) */}
-              <Route
-                path="/login"
-                element={
-                  <AuthRoute>
-                    <Login />
-                  </AuthRoute>
-                }
-              />
-              <Route
-                path="/signup"
-                element={
-                  <AuthRoute>
-                    <Signup />
-                  </AuthRoute>
-                }
-              />
-              <Route
-                path="/reset-password"
-                element={
-                  <AuthRoute>
-                    <ResetPassword />
-                  </AuthRoute>
-                }
-              />
+              {/* Main App Routes (with Navbar/Footer) */}
+              <Route path="/*" element={
+                <AppLayout>
+                  <Routes>
+                    {/* Public Routes */}
+                    <Route path="/" element={<Home />} />
 
-              {/* Protected Routes (require authentication) */}
-              <Route
-                path="/learn"
-                element={
-                  <ProtectedRoute>
-                    <Learn />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/learn/:lessonId"
-                element={
-                  <ProtectedRoute>
-                    <Learn />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/learn/letter/:letter"
-                element={
-                  <ProtectedRoute>
-                    <LetterDetail />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/learn/letter/:letter/practice"
-                element={
-                  <ProtectedRoute>
-                    <LetterLearning />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/practice"
-                element={
-                  <ProtectedRoute>
-                    <Practice />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/xp-history"
-                element={
-                  <ProtectedRoute>
-                    <XPHistory />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/leaderboard"
-                element={
-                  <ProtectedRoute>
-                    <Leaderboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/practice/free"
-                element={
-                  <ProtectedRoute>
-                    <FreePractice />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/practice/flashcard"
-                element={
-                  <ProtectedRoute>
-                    <FlashcardMode />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/practice/timed"
-                element={
-                  <ProtectedRoute>
-                    <TimedChallenge />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/practice/history"
-                element={
-                  <ProtectedRoute>
-                    <PracticeHistory />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/learn/words/:wordId"
-                element={
-                  <ProtectedRoute>
-                    <WordDetail />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/practice/words/:wordId?"
-                element={
-                  <ProtectedRoute>
-                    <PracticeWords />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/sentence-builder"
-                element={
-                  <ProtectedRoute>
-                    <SentenceBuilder />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/progress"
-                element={
-                  <ProtectedRoute>
-                    <Progress />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <Profile />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/settings"
-                element={
-                  <ProtectedRoute>
-                    <Settings />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/leaderboard"
-                element={
-                  <ProtectedRoute>
-                    <Leaderboard />
-                  </ProtectedRoute>
-                }
-              />
+                    {/* Auth Routes (redirect if already logged in) */}
+                    <Route
+                      path="/login"
+                      element={
+                        <AuthRoute>
+                          <Login />
+                        </AuthRoute>
+                      }
+                    />
+                    <Route
+                      path="/signup"
+                      element={
+                        <AuthRoute>
+                          <Signup />
+                        </AuthRoute>
+                      }
+                    />
+                    <Route
+                      path="/reset-password"
+                      element={
+                        <AuthRoute>
+                          <ResetPassword />
+                        </AuthRoute>
+                      }
+                    />
 
-              {/* Catch-all redirect to home */}
-              <Route path="*" element={<Navigate to="/" replace />} />
+                    {/* Protected Routes (require authentication) */}
+                    <Route
+                      path="/learn"
+                      element={
+                        <ProtectedRoute>
+                          <Learn />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/learn/:lessonId"
+                      element={
+                        <ProtectedRoute>
+                          <Learn />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/learn/letter/:letter"
+                      element={
+                        <ProtectedRoute>
+                          <LetterDetail />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/learn/letter/:letter/practice"
+                      element={
+                        <ProtectedRoute>
+                          <LetterLearning />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/practice"
+                      element={
+                        <ProtectedRoute>
+                          <Practice />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/xp-history"
+                      element={
+                        <ProtectedRoute>
+                          <XPHistory />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/leaderboard"
+                      element={
+                        <ProtectedRoute>
+                          <Leaderboard />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/practice/free"
+                      element={
+                        <ProtectedRoute>
+                          <FreePractice />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/practice/flashcard"
+                      element={
+                        <ProtectedRoute>
+                          <FlashcardMode />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/practice/timed"
+                      element={
+                        <ProtectedRoute>
+                          <TimedChallenge />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/practice/history"
+                      element={
+                        <ProtectedRoute>
+                          <PracticeHistory />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/learn/words/:wordId"
+                      element={
+                        <ProtectedRoute>
+                          <WordDetail />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/practice/words/:wordId?"
+                      element={
+                        <ProtectedRoute>
+                          <PracticeWords />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/sentence-builder"
+                      element={
+                        <ProtectedRoute>
+                          <SentenceBuilder />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/progress"
+                      element={
+                        <ProtectedRoute>
+                          <Progress />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/profile"
+                      element={
+                        <ProtectedRoute>
+                          <Profile />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/settings"
+                      element={
+                        <ProtectedRoute>
+                          <Settings />
+                        </ProtectedRoute>
+                      }
+                    />
+
+                    {/* Catch-all redirect to home */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </AppLayout>
+              } />
             </Routes>
-          </AppLayout>
-        </Router>
-      </LevelUpProvider>
+          </Router>
+        </LevelUpProvider>
+      </AdminProvider>
     </SettingsProvider>
   );
 }
