@@ -141,14 +141,13 @@ const FreeFlowMode = () => {
     const handleTranslate = async () => {
         setIsTranslating(true);
         try {
-            // Call Gemini to translate the array of captured words
             const result = await translateASLSequence(sentence);
             setTranslationResult(result);
         } catch (error) {
             console.error("Translation failed", error);
             setTranslationResult({
                 smoothEnglish: sentence.join(" "),
-                feedback: "Failed to connect to the translation service. Please try again."
+                feedback: "Failed to connect to the translation service."
             });
         } finally {
             setIsTranslating(false);
@@ -228,19 +227,60 @@ const FreeFlowMode = () => {
                 )}
             </div>
 
+           {/* Gemini 语法纠错 + 缺失词汇 21 方位骨骼引导 */}
             <AnimatePresence>
                 {translationResult && (
                     <motion.div 
                         initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-                        className="glass-card p-6 border border-success/50 bg-success/10"
+                        className="glass-card p-6 border border-success/50 bg-success/5 mt-6"
                     >
                         <div className="flex items-start gap-4">
                             <CheckCircle className="w-6 h-6 text-success shrink-0 mt-1" />
-                            <div>
+                            <div className="flex-1">
                                 <h4 className="text-sm text-dark-300 uppercase tracking-wider mb-1">Smooth English</h4>
                                 <p className="text-2xl font-bold text-white mb-4">{translationResult.smoothEnglish}</p>
+                                
                                 <h4 className="text-sm text-dark-300 uppercase tracking-wider mb-1">ASL Grammar Feedback</h4>
-                                <p className="text-dark-100">{translationResult.feedback}</p>
+                                <p className="text-dark-100 mb-6">{translationResult.feedback}</p>
+
+                                {/* 重点：这里就是渲染 21 方位 3D/网格提示图的地方 */}
+                                {translationResult.missingSigns && translationResult.missingSigns.length > 0 && (
+                                    <div className="border-t border-success/20 pt-4">
+                                        <h4 className="text-sm font-medium text-warning uppercase tracking-wider mb-4 flex items-center gap-2">
+                                            <Sparkles className="w-5 h-5" /> Practice Missing Signs:
+                                        </h4>
+                                        <div className="flex flex-wrap gap-4">
+                                            {translationResult.missingSigns.slice(0, 2).map((sign, idx) => (
+                                                <div key={idx} className="flex items-center gap-4 bg-dark-800 p-4 rounded-xl border border-dark-600 shadow-lg">
+                                                    
+                                                    {/* 21 方位骨骼点视觉模拟图 (Hackathon 视觉利器) */}
+                                                    <div className="w-20 h-20 rounded-lg bg-dark-900 border border-primary/30 flex items-center justify-center relative overflow-hidden">
+                                                        <Hand className="w-10 h-10 text-primary/20 absolute z-0" />
+                                                        <svg className="absolute inset-0 w-full h-full z-10 drop-shadow-md" viewBox="0 0 100 100">
+                                                            {/* 手腕到指根 */}
+                                                            <path d="M50 90 L30 50 M50 90 L45 45 M50 90 L60 45 M50 90 L75 50" stroke="rgba(99, 102, 241, 0.4)" strokeWidth="2" fill="none"/>
+                                                            {/* 手指连线模拟 */}
+                                                            <path d="M30 50 L20 30 L15 15 M45 45 L40 20 L35 10 M60 45 L65 20 L70 10 M75 50 L85 30 L90 15" stroke="rgba(139, 92, 246, 0.6)" strokeWidth="2" fill="none"/>
+                                                            {/* 关节点 (21个节点模拟) */}
+                                                            <circle cx="50" cy="90" r="3" fill="#EC4899"/> {/* 手腕 */}
+                                                            <circle cx="30" cy="50" r="2.5" fill="#8B5CF6"/> <circle cx="20" cy="30" r="2" fill="#8B5CF6"/> <circle cx="15" cy="15" r="2.5" fill="#6366F1"/> {/* 大拇指 */}
+                                                            <circle cx="45" cy="45" r="2.5" fill="#8B5CF6"/> <circle cx="40" cy="20" r="2" fill="#8B5CF6"/> <circle cx="35" cy="10" r="2.5" fill="#6366F1"/> {/* 食指 */}
+                                                            <circle cx="60" cy="45" r="2.5" fill="#8B5CF6"/> <circle cx="65" cy="20" r="2" fill="#8B5CF6"/> <circle cx="70" cy="10" r="2.5" fill="#6366F1"/> {/* 中指 */}
+                                                            <circle cx="75" cy="50" r="2.5" fill="#8B5CF6"/> <circle cx="85" cy="30" r="2" fill="#8B5CF6"/> <circle cx="90" cy="15" r="2.5" fill="#6366F1"/> {/* 无名/小指 */}
+                                                        </svg>
+                                                    </div>
+                                                    
+                                                    <div>
+                                                        <p className="text-white font-extrabold text-2xl capitalize tracking-wide">{sign}</p>
+                                                        <p className="text-sm text-primary mt-1 flex items-center gap-1">
+                                                            <Camera className="w-3 h-3"/> Re-sign to fix
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </motion.div>
