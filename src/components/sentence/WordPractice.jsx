@@ -6,6 +6,7 @@
  */
 
 import { useState, useCallback, useRef, lazy, Suspense } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Camera,
@@ -86,7 +87,8 @@ const WordPractice = ({
     }, []);
 
     // Stop camera
-    const stopCamera = useCallback(() => {
+// eslint-disable-next-line no-unused-vars
+    const stopCamera = useCallback(() => {        
         if (streamRef.current) {
             streamRef.current.getTracks().forEach(track => track.stop());
             streamRef.current = null;

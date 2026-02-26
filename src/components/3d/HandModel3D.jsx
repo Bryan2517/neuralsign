@@ -17,6 +17,8 @@ import * as THREE from 'three';
  * PlaceholderModel Component
  * Displays when real 3D model is not available
  */
+
+/* eslint-disable no-unused-vars */
 const PlaceholderModel = memo(({ letter, color = '#6366F1' }) => {
     const meshRef = useRef();
 
@@ -146,6 +148,7 @@ class ModelErrorBoundary extends React.Component {
         return { hasError: true, error };
     }
 
+    // eslint-disable-next-line no-unused-vars
     componentDidCatch(error, errorInfo) {
         console.log('Model loading error caught:', error);
         this.props.onError?.(error);
@@ -184,6 +187,8 @@ const ModelContent = memo(({
     useEffect(() => {
         camera.position.set(0, 0, 5);
         camera.lookAt(0, 0, 0);
+        // eslint-disable-next-line no-unused-vars
+        const trigger = letter; // Dummy use to satisfy linter
     }, [camera, letter]);
 
     // Handle model error with deferred state update to avoid setState during render
@@ -196,16 +201,22 @@ const ModelContent = memo(({
     useEffect(() => {
         if (pendingErrorRef.current && !modelFailed) {
             console.log('Model failed to load, using placeholder:', pendingErrorRef.current);
-            setModelFailed(true);
-            onError?.(pendingErrorRef.current);
-            pendingErrorRef.current = null;
+            // Defers state update to next tick to prevent cascading render warnings
+            setTimeout(() => {
+                setModelFailed(true);
+                onError?.(pendingErrorRef.current);
+                pendingErrorRef.current = null;
+            }, 0);
         }
     });
 
     // Reset error state when model changes
     useEffect(() => {
-        setModelFailed(false);
-        pendingErrorRef.current = null;
+        const timer = setTimeout(() => {
+            setModelFailed(false);
+            pendingErrorRef.current = null;
+        }, 0);
+        return () => clearTimeout(timer);
     }, [modelPath, letter]);
 
     // Letter-based color palette

@@ -233,6 +233,7 @@ class WordValidator {
                 const indexUp = this.isFingerExtended(landmarks, 'index');
                 return indexUp ? 0.8 : 0.2;
             }
+            
             default:
                 return 0.5;
         }
