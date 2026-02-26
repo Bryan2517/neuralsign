@@ -1,9 +1,8 @@
 /**
  * Word Sign Validation Service
  * Validates word signs using MediaPipe hand landmarks
- * MVP: Position-based validation (motion tracking deferred to Phase 2)
- * 
- * NeuralSign - AI Sign Language Learning Platform
+ * MVP: Position-based validation with high-accuracy scale-invariant heuristics.
+ * * NeuralSign - AI Sign Language Learning Platform
  */
 
 /**
@@ -66,8 +65,8 @@ class WordValidator {
             }
         }
 
-        // 3. Check hand shape for static signs
-        if (word.isStatic) {
+        // 3. Check hand shape for static signs (Fallback)
+        if (word.isStatic && !['water', 'i-me', 'you', 'yes', 'no', 'love', 'L', 'I', 'F'].includes(word.id)) {
             const shapeScore = this.checkHandShape(word, landmarks);
             checks.push(shapeScore);
 
@@ -76,13 +75,14 @@ class WordValidator {
             }
         }
 
-        // 4. Check finger extension patterns
-        if (word.id === 'water' || word.id === 'i-me' || word.id === 'you') {
+        // 4. Check specific finger extension patterns (Strict Validation)
+        const strictWords = ['water', 'i-me', 'you', 'yes', 'no', 'love', 'L', 'I', 'F'];
+        if (strictWords.includes(word.id)) {
             const fingerScore = this.checkSpecificSign(word.id, landmarks);
             checks.push(fingerScore);
 
             if (fingerScore < 0.5) {
-                feedbacks.push(word.shortDescription || 'Adjust your finger positions.');
+                feedbacks.push(word.shortDescription || 'Adjust your finger positions strictly.');
             }
         }
 
@@ -128,7 +128,6 @@ class WordValidator {
      */
     checkHandPosition(landmarks, expectedPosition) {
         const palmCenter = this.calculatePalmCenter(landmarks);
-
         const { x: expectedX, y: expectedY } = expectedPosition;
         let score = 1.0;
 
@@ -172,78 +171,139 @@ class WordValidator {
     }
 
     /**
-     * Check basic hand shape for static signs
+     * Check basic hand shape for static signs (Fallback)
      * @param {Object} word - Word definition
      * @param {Array} landmarks - Hand landmarks
      * @returns {number} Score 0-1
      */
     checkHandShape(word, landmarks) {
-        // For pointing signs (pronouns), check if index finger is extended
-        if (['i-me', 'you', 'he-him', 'she-her'].includes(word.id)) {
-            const indexExtended = this.isFingerExtended(landmarks, 'index');
-            const middleRetracted = !this.isFingerExtended(landmarks, 'middle');
-            const ringRetracted = !this.isFingerExtended(landmarks, 'ring');
-
-            let score = 0;
-            if (indexExtended) score += 0.6;
-            if (middleRetracted) score += 0.2;
-            if (ringRetracted) score += 0.2;
-            return score;
-        }
-
-        // For fist signs (yes, sorry), check all fingers curled
         if (['yes', 'sorry'].includes(word.id)) {
             const fingersCurled = ['index', 'middle', 'ring', 'pinky']
                 .filter(f => !this.isFingerExtended(landmarks, f)).length;
             return fingersCurled / 4;
         }
-
         return 0.6; // Default moderate score for unspecified shapes
     }
 
     /**
-     * Check specific sign configurations
+     * Check specific sign configurations with STRICT penalties to prevent false positives
      * @param {string} signId - Sign identifier
      * @param {Array} landmarks - Hand landmarks
      * @returns {number} Score 0-1
      */
     checkSpecificSign(signId, landmarks) {
-        switch (signId) {
-            case 'water': {
-                // W handshape: index, middle, ring extended; pinky curled
-                const indexUp = this.isFingerExtended(landmarks, 'index');
-                const middleUp = this.isFingerExtended(landmarks, 'middle');
-                const ringUp = this.isFingerExtended(landmarks, 'ring');
-                const pinkyDown = !this.isFingerExtended(landmarks, 'pinky');
+        // Evaluate the boolean state of all 5 fingers first
+        const thumbUp = this.isFingerExtended(landmarks, 'thumb');
+        const indexUp = this.isFingerExtended(landmarks, 'index');
+        const middleUp = this.isFingerExtended(landmarks, 'middle');
+        const ringUp = this.isFingerExtended(landmarks, 'ring');
+        const pinkyUp = this.isFingerExtended(landmarks, 'pinky');
 
-                let score = 0;
-                if (indexUp) score += 0.3;
-                if (middleUp) score += 0.3;
-                if (ringUp) score += 0.2;
-                if (pinkyDown) score += 0.2;
-                return score;
+        switch (signId) {
+            case 'love': {
+                // ILY (I Love You) handshape: Thumb, index, and pinky extended. Middle and ring curled.
+                if (thumbUp && indexUp && !middleUp && !ringUp && pinkyUp) return 0.95;
+                
+                // Strict Penalty: If middle or ring are up, it is not Love.
+                if (middleUp || ringUp) return 0.1;
+                // Strict Penalty: Missing required core fingers.
+                if (!thumbUp || !indexUp || !pinkyUp) return 0.1;
+                
+                return 0.3;
+            }
+            case 'want': {
+                const palmSize = Math.hypot(landmarks[9].x - landmarks[0].x, landmarks[9].y - landmarks[0].y);
+                let curvedScore = 0;
+                const tips = [8, 12, 16, 20];
+                const mcps = [5, 9, 13, 17];
+                for(let i=0; i<4; i++) {
+                    const tipDist = Math.hypot(landmarks[tips[i]].x - landmarks[mcps[i]].x, landmarks[tips[i]].y - landmarks[mcps[i]].y);
+                    const ratio = tipDist / palmSize;
+                    if (ratio > 0.35 && ratio < 0.85) {
+                        curvedScore += 0.25;
+                    }
+                }
+                if (curvedScore >= 0.75) return 0.95;
+                return 0.2;
+            }
+            case 'water': {
+                // W handshape: index, middle, ring extended; pinky and thumb curled
+                if (indexUp && middleUp && ringUp && !pinkyUp && !thumbUp) return 0.95;
+                
+                // Strict Penalty: If pinky is up (e.g., 5 fingers open), it's absolutely NOT water.
+                if (pinkyUp || thumbUp) return 0.1; 
+                // Penalty: Missing required fingers
+                if (!indexUp || !middleUp || !ringUp) return 0.2;
+                
+                return 0.3;
             }
             case 'i-me': {
-                // Point to self
-                const indexUp = this.isFingerExtended(landmarks, 'index');
-                return indexUp ? 0.8 : 0.2;
+                // Pointing to self: Only index is extended
+                if (indexUp && !middleUp && !ringUp && !pinkyUp && !thumbUp) return 0.95;
+                
+                // Strict Penalty: If other fingers are up, it's a completely different sign
+                if (middleUp || ringUp || pinkyUp || thumbUp) return 0.1;
+                
+                return 0.3;
             }
             case 'you': {
-                // Point forward
-                const indexUp = this.isFingerExtended(landmarks, 'index');
-                return indexUp ? 0.8 : 0.2;
+                // Pointing index finger (Usually relies on motion/direction, but static shape is the same as 'I')
+                if (indexUp && !middleUp && !ringUp && !pinkyUp) return 0.90;
+                
+                if (middleUp || ringUp || pinkyUp) return 0.1;
+                
+                return 0.3;
             }
-            
+            case 'yes': {
+                // Yes sign: Fist shape (All main fingers curled down)
+                if (!indexUp && !middleUp && !ringUp && !pinkyUp) return 0.90;
+                
+                // Strict Penalty: Fingers cannot be open for 'yes'
+                if (indexUp || middleUp || ringUp) return 0.1;
+                
+                return 0.4;
+            }
+            case 'no': {
+                // No sign: Index and middle extended, ring and pinky curled
+                if (indexUp && middleUp && !ringUp && !pinkyUp) return 0.90;
+                
+                // Strict Penalty: If ring or pinky is up, it's a different sign
+                if (ringUp || pinkyUp) return 0.1;
+                // Penalty: Missing primary fingers
+                if (!indexUp || !middleUp) return 0.2;
+                
+                return 0.3;
+            }
+            case 'L': { 
+                // L handshape: Index and thumb extended, others curled
+                if (indexUp && thumbUp && !middleUp && !ringUp && !pinkyUp) return 0.95;
+                if (middleUp || ringUp || pinkyUp) return 0.1;
+                return 0.4;
+            }
+            case 'I': {
+                // I handshape: Only pinky extended
+                if (!indexUp && !middleUp && !ringUp && pinkyUp && !thumbUp) return 0.95;
+                if (indexUp || middleUp || ringUp || thumbUp) return 0.1;
+                return 0.4;
+            }
+            case 'F': {
+                // F handshape: Middle, ring, pinky extended. Index curled down to thumb.
+                if (!indexUp && middleUp && ringUp && pinkyUp) return 0.95;
+                if (!middleUp || !ringUp || !pinkyUp) return 0.1;
+                if (indexUp) return 0.1; // Index MUST be curled
+                return 0.4;
+            }
             default:
                 return 0.5;
         }
     }
 
     /**
-     * Check if a specific finger is extended
-     * @param {Array} landmarks - Hand landmarks
+     * HIGH ACCURACY Finger Extension Detection (Scale-Invariant Joint Distances)
+     * Solves issues caused by camera distance and palm rotation.
+     * * @param {Array} landmarks - Hand landmarks
      * @param {string} finger - 'index', 'middle', 'ring', 'pinky', 'thumb'
-     * @returns {boolean} Whether finger is extended
+     * @returns {boolean} Whether finger is truly extended
      */
     isFingerExtended(landmarks, finger) {
         const fingerMap = {
@@ -257,22 +317,34 @@ class WordValidator {
         const f = fingerMap[finger];
         if (!f) return false;
 
+        const wrist = landmarks[0];
+
         if (finger === 'thumb') {
-            // Thumb uses x-axis comparison
-            return Math.abs(landmarks[f.tip].x - landmarks[f.mcp].x) > 0.05;
+            // High-precision thumb detection:
+            // Calculate distance from Thumb Tip (4) to Pinky Base (17)
+            const thumbToPinkyDist = Math.hypot(
+                landmarks[4].x - landmarks[17].x, 
+                landmarks[4].y - landmarks[17].y
+            );
+            // Calculate actual Palm Width: Index Base (5) to Pinky Base (17)
+            const palmWidth = Math.hypot(
+                landmarks[5].x - landmarks[17].x, 
+                landmarks[5].y - landmarks[17].y
+            );
+            
+            // If thumb is extended, the distance to pinky base must be noticeably larger than the palm width
+            return thumbToPinkyDist > (palmWidth * 1.2);
         }
 
-        // Other fingers: tip should be further from wrist than PIP joint
-        const tipToWrist = Math.hypot(
-            landmarks[f.tip].x - landmarks[0].x,
-            landmarks[f.tip].y - landmarks[0].y
-        );
-        const pipToWrist = Math.hypot(
-            landmarks[f.pip].x - landmarks[0].x,
-            landmarks[f.pip].y - landmarks[0].y
-        );
+        // High-precision detection for Index, Middle, Ring, Pinky:
+        // Calculate distance from Tip to Wrist
+        const tipDist = Math.hypot(landmarks[f.tip].x - wrist.x, landmarks[f.tip].y - wrist.y);
+        // Calculate distance from PIP (middle joint) to Wrist
+        const pipDist = Math.hypot(landmarks[f.pip].x - wrist.x, landmarks[f.pip].y - wrist.y);
 
-        return tipToWrist > pipToWrist * 0.95;
+        // If the finger is extended, the tip MUST be significantly further from the wrist than the middle joint.
+        // The 1.15 multiplier provides a strict threshold so slightly bent fingers are correctly marked as closed.
+        return tipDist > (pipDist * 1.15);
     }
 
     /**
@@ -425,45 +497,29 @@ class EnhancedWordValidator {
         let score = 0;
         let checks = 0;
 
-        // Wave-type signs (hello, goodbye)
         if (['hello', 'goodbye'].includes(word.id)) {
-            if (motionAnalysis.wave?.detected) {
-                score += 0.8;
-            } else if (motionAnalysis.sideToSide?.detected) {
-                score += 0.6;
-            }
+            if (motionAnalysis.wave?.detected) score += 0.8;
+            else if (motionAnalysis.sideToSide?.detected) score += 0.6;
             checks++;
         }
 
-        // Circular motion signs (sorry, please)
         if (['sorry', 'please'].includes(word.id)) {
-            if (motionAnalysis.circular) {
-                score += 0.8;
-            }
+            if (motionAnalysis.circular) score += 0.8;
             checks++;
         }
 
-        // Nodding signs (yes)
         if (word.id === 'yes') {
-            if (motionAnalysis.direction === 'down' || motionAnalysis.direction === 'up') {
-                score += 0.7;
-            }
+            if (motionAnalysis.direction === 'down' || motionAnalysis.direction === 'up') score += 0.7;
             checks++;
         }
 
-        // Shaking signs (no)
         if (word.id === 'no') {
-            if (motionAnalysis.sideToSide?.detected && motionAnalysis.speed === 'fast') {
-                score += 0.8;
-            }
+            if (motionAnalysis.sideToSide?.detected && motionAnalysis.speed === 'fast') score += 0.8;
             checks++;
         }
 
-        // Forward motion signs (thank-you, go)
         if (['thank-you', 'go'].includes(word.id)) {
-            if (motionAnalysis.direction === 'forward') {
-                score += 0.7;
-            }
+            if (motionAnalysis.direction === 'forward') score += 0.7;
             checks++;
         }
 
@@ -472,30 +528,13 @@ class EnhancedWordValidator {
 
     /** Generate specific feedback based on motion analysis */
     generateMotionFeedback(word, motionAnalysis, confidence) {
-        if (confidence >= 0.8) {
-            return 'Excellent motion! Sign recognized perfectly! ✨';
-        }
+        if (confidence >= 0.8) return 'Excellent motion! Sign recognized perfectly! ✨';
+        if (confidence >= 0.6) return 'Good motion! Sign recognized. Keep refining the movement.';
 
-        if (confidence >= 0.6) {
-            return 'Good motion! Sign recognized. Keep refining the movement.';
-        }
-
-        // Specific motion feedback
-        if (['hello', 'goodbye'].includes(word.id) && !motionAnalysis.wave?.detected) {
-            return 'Try waving your hand side to side more clearly.';
-        }
-
-        if (['sorry', 'please'].includes(word.id) && !motionAnalysis.circular) {
-            return 'Make a circular motion on your chest.';
-        }
-
-        if (word.id === 'yes' && motionAnalysis.direction === 'stationary') {
-            return 'Nod your fist up and down.';
-        }
-
-        if (word.id === 'no' && !motionAnalysis.sideToSide?.detected) {
-            return 'Shake your hand side to side.';
-        }
+        if (['hello', 'goodbye'].includes(word.id) && !motionAnalysis.wave?.detected) return 'Try waving your hand side to side more clearly.';
+        if (['sorry', 'please'].includes(word.id) && !motionAnalysis.circular) return 'Make a circular motion on your chest.';
+        if (word.id === 'yes' && motionAnalysis.direction === 'stationary') return 'Nod your fist up and down.';
+        if (word.id === 'no' && !motionAnalysis.sideToSide?.detected) return 'Shake your hand side to side.';
 
         return 'Keep practicing the motion. Watch the reference video for guidance.';
     }

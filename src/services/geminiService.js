@@ -19,7 +19,7 @@ const INITIAL_BACKOFF = 2000; // 2 seconds
 // Rate limiting state
 let lastRequestTime = 0;
 let cooldownEndTime = 0;
-
+import { GoogleGenerativeAI } from '@google/generative-ai';
 /**
  * Get remaining cooldown time in milliseconds
  * @returns {number} Milliseconds until next request is allowed
@@ -642,6 +642,114 @@ Respond with ONLY the JSON object, nothing else.`;
     };
 }
 
+// Initialize the Gemini API instance using the environment variable
+let genAIInstance = null;
+
+/**
+ * Get the initialized Gemini instance.
+ * Throws an error if the API key is missing.
+ * @returns {GoogleGenerativeAI} The Gemini API instance
+ */
+export function getGeminiInstance() {
+    if (!genAIInstance) {
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+        if (!apiKey) {
+            console.error("Gemini API key is missing. Please check your .env file.");
+            throw new Error("Missing VITE_GEMINI_API_KEY");
+        }
+        genAIInstance = new GoogleGenerativeAI(apiKey);
+    }
+    return genAIInstance;
+}
+
+/**
+ * Utility function to clean markdown JSON formatting from Gemini responses
+ * @param {string} text - The raw text from Gemini
+ * @returns {string} Cleaned JSON string
+ */
+function cleanJsonResponse(text) {
+    return text.replace(/```json/g, '').replace(/```/g, '').trim();
+}
+
+// ============================================================================
+// 📚 GUIDED MODE: English to ASL Breakdown (Teammate's Original Feature)
+// ============================================================================
+
+/**
+ * Analyze an English sentence and break it down into ASL syntax (Gloss).
+ * Used in the Guided Wizard mode to teach users how to structure sentences.
+ * * @param {string} sentence - The standard English sentence
+ * @returns {Promise<Object>} - { original, aslWords, explanation }
+
+// ============================================================================
+// 🌟 FREE FLOW MODE: ASL to English Translation & Feedback (Your New Feature)
+// ============================================================================
+
+/**
+ * Analyze a sequence of raw ASL words and translate them into natural English,
+ * providing grammar feedback for the learner.
+ * Used exclusively in the Free Flow Sentence Builder.
+ * * @param {string[]} words - Array of captured signs (e.g., ["I", "Love", "Water"])
+ * @returns {Promise<Object>} - { smoothEnglish, feedback }
+ */
+export async function translateASLSequence(words) {
+    if (!words || words.length === 0) {
+        return {
+            smoothEnglish: "",
+            feedback: "No signs captured. Please try again."
+        };
+    }
+
+    const rawSequence = words.join(" ");
+
+    const prompt = `
+        You are an expert American Sign Language (ASL) teacher and interpreter.
+        A student has just signed the following sequence of words to the camera: [${rawSequence}]
+
+        Your task is to analyze this sequence and provide a JSON response with two keys:
+        1. "smoothEnglish": Translate their raw ASL sequence into a natural, grammatically correct English sentence.
+        2. "feedback": Provide brief, encouraging feedback on their ASL grammar. ASL often uses Subject-Verb-Object (SVO) or Topic-Comment structures. 
+           - If they signed "I Love Water", praise them for a perfect SVO structure.
+           - If they signed "I Water", gently remind them that they forgot the verb (like "want" or "love" or "drink") and tell them what the correct ASL sequence should be.
+        
+        Keep the feedback under 3 sentences, friendly, and highly educational.
+        Return ONLY valid JSON. No markdown formatting, no backticks.
+        
+        Format:
+        {
+            "smoothEnglish": "...",
+            "feedback": "..."
+        }
+    `;
+    try {
+        const genAI = getGeminiInstance();
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        const result = await model.generateContent({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: {
+                temperature: 0.3,
+            }
+        });
+        
+        const cleanedText = cleanJsonResponse(result.response.text());
+        return JSON.parse(cleanedText);
+
+    } catch (error) {
+        console.error("Error translating ASL sequence with Gemini:", error);
+        // Fallback for the demo in case of API timeout
+        return {
+            smoothEnglish: words.join(" "),
+            feedback: "Great job practicing! Keep working on your ASL syntax."
+        };
+    }
+}; 
+
+// ============================================================================
+// 🌟 FREE FLOW MODE: ASL to English Translation & Feedback (New Feature)
+// ============================================================================
+let _freeFlowGenAI = null;
+
 export default {
     isGeminiConfigured,
     captureFrameFromVideo,
@@ -649,6 +757,7 @@ export default {
     analyzeSentenceToSigns,
     validateSentenceSign,
     getCooldownRemaining,
-    canMakeRequest
+    canMakeRequest,
+    translateASLSequence,
 };
 

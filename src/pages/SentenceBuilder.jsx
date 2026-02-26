@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import useAuthStore from '@/store/authStore';
 import { savePracticedSentence, getUserProgress } from '@/services/database';
-import { analyzeSentenceToSigns } from '@/services/geminiService';
+import { analyzeSentenceToSigns, translateASLSequence } from '@/services/geminiService';
 import SentenceInput from '@/components/sentence/SentenceInput';
 import WordBreakdown from '@/components/sentence/WordBreakdown';
 import SignSequence from '@/components/sentence/SignSequence';
@@ -36,16 +36,15 @@ const STEP_CONFIG = [
     { id: STEPS.PRACTICE, label: 'Practice', icon: Camera }
 ];
 
+// Active vocabulary for the "I want water" demo scenario
 const ACTIVE_VOCABULARY = [
-    { id: 'water', englishText: 'Water', isStatic: true },
     { id: 'i-me', englishText: 'I', isStatic: true },
+    { id: 'love', englishText: 'Love', isStatic: true },
+    { id: 'want', englishText: 'Want', isStatic: true }, // Added WANT
+    { id: 'water', englishText: 'Water', isStatic: true },
     { id: 'you', englishText: 'You', isStatic: true },
     { id: 'yes', englishText: 'Yes', isStatic: true },
-    { id: 'no', englishText: 'No', isStatic: true },
-    { id: 'L', englishText: 'L', isStatic: true },
-    { id: 'I', englishText: 'I', isStatic: true },
-    { id: 'F', englishText: 'F', isStatic: true },
-    { id: 'love', englishText: 'Love', isStatic: true }
+    { id: 'no', englishText: 'No', isStatic: true }
 ];
 
 // ============================================================================
@@ -139,15 +138,21 @@ const FreeFlowMode = () => {
         return () => stopDetection();
     }, []);
 
-    const handleTranslate = () => {
+    const handleTranslate = async () => {
         setIsTranslating(true);
-        setTimeout(() => {
+        try {
+            // Call Gemini to translate the array of captured words
+            const result = await translateASLSequence(sentence);
+            setTranslationResult(result);
+        } catch (error) {
+            console.error("Translation failed", error);
             setTranslationResult({
-                smoothEnglish: "I want water.",
-                feedback: "Good! In ASL, you can sign 'WATER' and 'I' directly."
+                smoothEnglish: sentence.join(" "),
+                feedback: "Failed to connect to the translation service. Please try again."
             });
+        } finally {
             setIsTranslating(false);
-        }, 1500);
+        }
     };
 
     return (
