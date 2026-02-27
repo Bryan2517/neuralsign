@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Sentence Builder Page
  * FUSED VERSION: Guided Wizard + Free Flow Builder
  * * NeuralSign - AI Sign Language Learning Platform
@@ -26,7 +26,7 @@ import CameraFeed from '@/components/camera/CameraFeed';
 import { useHandDetection } from '@/hooks/useHandDetection';
 import { wordValidator } from '@/services/wordValidation';
 
-// 🚀 正式引入队友的 3D 模型组件！
+// ðŸš€ æ­£å¼å¼•å…¥é˜Ÿå‹çš„ 3D æ¨¡åž‹ç»„ä»¶ï¼
 import ModelViewer from '@/components/3d/ModelViewer';
 
 const STEPS = {
@@ -50,7 +50,7 @@ const ACTIVE_VOCABULARY = [
 ];
 
 // ============================================================================
-// 🌟 THE FREE FLOW BUILDER
+// ðŸŒŸ THE FREE FLOW BUILDER
 // ============================================================================
 const FreeFlowMode = () => {
     const [sentence, setSentence] = useState([]);
@@ -60,7 +60,7 @@ const FreeFlowMode = () => {
     const [isTranslating, setIsTranslating] = useState(false);
     const [translationResult, setTranslationResult] = useState(null);
     
-    // 练习模式状态
+    // ç»ƒä¹ æ¨¡å¼çŠ¶æ€
     const [practiceWord, setPracticeWord] = useState(null); 
     const [practiceProgress, setPracticeProgress] = useState(0);
     const [isPracticeSuccess, setIsPracticeSuccess] = useState(false);
@@ -97,7 +97,7 @@ const FreeFlowMode = () => {
             meanX = meanX / landmarks.length;
             setHandPosition({ x: (1 - meanX) * 100, y: minY * 100 });
 
-            // 🎯 练习模式判断逻辑
+            // ðŸŽ¯ ç»ƒä¹ æ¨¡å¼åˆ¤æ–­é€»è¾‘
             if (practiceWord) {
                 if (isPracticeSuccess) return; 
 
@@ -130,7 +130,7 @@ const FreeFlowMode = () => {
                 return; 
             }
 
-            // 🗣️ 自由组句雷达模式
+            // ðŸ—£ï¸ è‡ªç”±ç»„å¥é›·è¾¾æ¨¡å¼
             let highestScore = 0;
             let topWord = null;
 
@@ -205,7 +205,7 @@ const FreeFlowMode = () => {
     return (
         <div className="max-w-6xl mx-auto mt-6 relative px-2">
             
-            {/* 练习模式顶部横幅 */}
+            {/* ç»ƒä¹ æ¨¡å¼é¡¶éƒ¨æ¨ªå¹… */}
             <AnimatePresence>
                 {practiceWord && (
                     <motion.div 
@@ -226,12 +226,12 @@ const FreeFlowMode = () => {
                 )}
             </AnimatePresence>
 
-            {/* 🚀 终极布局防爆裂设计：Flex Stretch + Min-H-0 */}
+            {/* ðŸš€ ç»ˆæžå¸ƒå±€é˜²çˆ†è£‚è®¾è®¡ï¼šFlex Stretch + Min-H-0 */}
             <div className={`flex flex-col ${practiceWord ? 'lg:flex-row items-stretch' : ''} gap-6 w-full transition-all duration-500`}>
                 
-                {/* 左侧：摄像头区域主导高度 (flex-[2] 代表占约 66% 宽度) */}
+                {/* å·¦ä¾§ï¼šæ‘„åƒå¤´åŒºåŸŸä¸»å¯¼é«˜åº¦ (flex-[2] ä»£è¡¨å çº¦ 66% å®½åº¦) */}
                 <div className={`relative glass-card p-2 rounded-2xl overflow-hidden shadow-2xl flex flex-col justify-center transition-all duration-500 ${practiceWord ? 'lg:flex-[2] shrink-0' : 'w-full'}`}>
-                    {/* aspect-video 强制锁定 16:9 的视频比例，这是整个布局的高度基准 */}
+                    {/* aspect-video å¼ºåˆ¶é”å®š 16:9 çš„è§†é¢‘æ¯”ä¾‹ï¼Œè¿™æ˜¯æ•´ä¸ªå¸ƒå±€çš„é«˜åº¦åŸºå‡† */}
                     <div className="relative w-full bg-dark-900 rounded-xl overflow-hidden aspect-video flex items-center justify-center">
                         <CameraFeed
                             videoRef={videoRef} canvasRef={canvasRef} isActive={isCameraActive}
@@ -239,7 +239,7 @@ const FreeFlowMode = () => {
                             onStart={startDetection} onStop={stopDetection} onRetry={startDetection}
                         />
 
-                        {/* 组句雷达 */}
+                        {/* ç»„å¥é›·è¾¾ */}
                         <AnimatePresence>
                             {!practiceWord && handDetected && bestMatch && (
                                 <motion.div
@@ -260,7 +260,7 @@ const FreeFlowMode = () => {
                             )}
                         </AnimatePresence>
 
-                        {/* 练习进度条 */}
+                        {/* ç»ƒä¹ è¿›åº¦æ¡ */}
                         <AnimatePresence>
                             {practiceWord && !isPracticeSuccess && handDetected && (
                                 <motion.div 
@@ -282,7 +282,7 @@ const FreeFlowMode = () => {
                             )}
                         </AnimatePresence>
 
-                        {/* 成功大满贯 */}
+                        {/* æˆåŠŸå¤§æ»¡è´¯ */}
                         <AnimatePresence>
                             {practiceWord && isPracticeSuccess && (
                                 <motion.div 
@@ -310,7 +310,7 @@ const FreeFlowMode = () => {
                     </div>
                 </div>
 
-                {/* 右侧：队友的 3D 模型区域 (flex-[1] 代表占 33% 宽度，且高度被强制拉平) */}
+                {/* å³ä¾§ï¼šé˜Ÿå‹çš„ 3D æ¨¡åž‹åŒºåŸŸ (flex-[1] ä»£è¡¨å  33% å®½åº¦ï¼Œä¸”é«˜åº¦è¢«å¼ºåˆ¶æ‹‰å¹³) */}
                 <AnimatePresence>
                     {practiceWord && (
                         <motion.div 
@@ -321,25 +321,23 @@ const FreeFlowMode = () => {
                         >
                             <div className="glass-card flex-1 flex flex-col border border-dark-600 shadow-2xl rounded-2xl bg-dark-800/80 overflow-hidden relative">
                                 
-                                {/* 标题栏 */}
+                                {/* æ ‡é¢˜æ  */}
                                 <div className="p-4 border-b border-dark-700 shrink-0 bg-dark-900/40">
                                     <h3 className="text-xs font-bold text-dark-400 uppercase tracking-widest flex items-center gap-2">
                                         <Sparkles className="w-4 h-4 text-primary" /> 3D Reference
                                     </h3>
                                 </div>
                                 
-                                {/* 核心黑魔法：min-h-0 强制内部组件(ModelViewer)收缩，绝不撑大外层 */}
+                                {/* æ ¸å¿ƒé»‘é­”æ³•ï¼šmin-h-0 å¼ºåˆ¶å†…éƒ¨ç»„ä»¶(ModelViewer)æ”¶ç¼©ï¼Œç»ä¸æ’‘å¤§å¤–å±‚ */}
                                 <div className="flex-1 min-h-0 p-4 flex flex-col items-center justify-center relative">
                                     <div className="w-full flex-1 relative flex items-center justify-center min-h-0">
-                                        {/* 队友的 ModelViewer，就算它报错，也只会在这个框里报错，不会影响整体布局 */}
-                                        {/* 传入完整的单词(Love)，并加上 flex-1 h-full 强制约束它的高度 */}
-                                            <ModelViewer 
-                                                letter={practiceWord} 
-                                                className="flex-1 w-full min-h-0 h-full" 
-                                            />
+                                        {/* é˜Ÿå‹çš„ ModelViewerï¼Œå°±ç®—å®ƒæŠ¥é”™ï¼Œä¹Ÿåªä¼šåœ¨è¿™ä¸ªæ¡†é‡ŒæŠ¥é”™ï¼Œä¸ä¼šå½±å“æ•´ä½“å¸ƒå±€ */}
+                                        <ModelViewer 
+                                            letter={practiceWord.charAt(0).toUpperCase()} 
+                                        />
                                     </div>
                                     
-                                    {/* 底部文字 */}
+                                    {/* åº•éƒ¨æ–‡å­— */}
                                     <div className="text-center shrink-0 w-full mt-2 bg-dark-900/60 py-3 rounded-xl border border-dark-700/50 backdrop-blur-sm">
                                         <p className="text-2xl font-black text-white capitalize tracking-wide drop-shadow-md">{practiceWord}</p>
                                         <p className="text-xs text-primary mt-1 opacity-80">Target Sign</p>
@@ -352,7 +350,7 @@ const FreeFlowMode = () => {
                 </AnimatePresence>
             </div>
 
-            {/* 底部：Sentence Dock */}
+            {/* åº•éƒ¨ï¼šSentence Dock */}
             <AnimatePresence>
                 {!practiceWord && (
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}>
@@ -385,7 +383,7 @@ const FreeFlowMode = () => {
                             )}
                         </div>
 
-                        {/* Gemini 反馈与练习推荐 */}
+                        {/* Gemini åé¦ˆä¸Žç»ƒä¹ æŽ¨è */}
                         {translationResult && (
                             <motion.div 
                                 initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
@@ -447,7 +445,7 @@ const FreeFlowMode = () => {
 };
 
 // ============================================================================
-// 👑 MAIN PAGE EXPORT
+// ðŸ‘‘ MAIN PAGE EXPORT
 // ============================================================================
 const SentenceBuilder = () => {
     const [mode, setMode] = useState('freeflow'); 
@@ -638,3 +636,742 @@ const SentenceBuilder = () => {
 };
 
 export default SentenceBuilder;
+/**
+ * HandModel3D Component
+ * Core 3D model viewer using @react-three/fiber and @react-three/drei
+ * Loads GLTF models and provides interactive viewing experience
+ */
+
+import React, { Suspense, useRef, useState, useEffect, useCallback, memo } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { OrbitControls, useGLTF, Center, Environment } from '@react-three/drei';
+import * as THREE from 'three';
+
+// ============================================
+// PLACEHOLDER MODEL
+// ============================================
+
+/**
+ * PlaceholderModel Component
+ * Displays when real 3D model is not available
+ */
+
+/* eslint-disable no-unused-vars */
+const PlaceholderModel = memo(({ letter, color = '#6366F1' }) => {
+    const meshRef = useRef();
+
+    // Gentle rotation animation
+    useFrame((state) => {
+        if (meshRef.current) {
+            meshRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.3;
+        }
+    });
+
+    // Create a simple box with the letter as texture
+    return (
+        <group ref={meshRef}>
+            {/* Main cube representing the hand placeholder */}
+            <mesh castShadow receiveShadow>
+                <boxGeometry args={[1.5, 1.5, 1.5]} />
+                <meshStandardMaterial
+                    color={color}
+                    roughness={0.4}
+                    metalness={0.3}
+                />
+            </mesh>
+
+            {/* Letter display on front face */}
+            <mesh position={[0, 0, 0.76]}>
+                <planeGeometry args={[1.2, 1.2]} />
+                <meshBasicMaterial color="#1E293B" />
+            </mesh>
+
+            {/* Decorative ring */}
+            <mesh rotation={[Math.PI / 2, 0, 0]}>
+                <torusGeometry args={[1.2, 0.05, 16, 100]} />
+                <meshStandardMaterial
+                    color="#8B5CF6"
+                    emissive="#8B5CF6"
+                    emissiveIntensity={0.2}
+                />
+            </mesh>
+        </group>
+    );
+});
+
+PlaceholderModel.displayName = 'PlaceholderModel';
+
+// ============================================
+// GLTF MODEL LOADER
+// ============================================
+
+/**
+ * GLTFModel Component
+ * Loads and displays GLTF model from path
+ * Uses useGLTF which automatically suspends during loading
+ */
+const GLTFModel = memo(({ modelPath, scale = 1, onLoad }) => {
+    // useGLTF suspends while loading (handled by Suspense in parent)
+    // Enable draco decoder from CDN for compressed models
+    const { scene } = useGLTF(modelPath, true);
+    // Clone the scene to avoid mutating the cached object
+    // usage of useMemo ensures we only clone when the scene or path changes
+    const clonedScene = React.useMemo(() => scene.clone(true), [scene]);
+
+    const modelRef = useRef();
+    const hasCalledOnLoad = useRef(false);
+
+    // Apply materials and shadows, and normalize scale on load
+    useEffect(() => {
+        if (clonedScene && !hasCalledOnLoad.current) {
+            hasCalledOnLoad.current = true;
+
+            // Calculate bounding box to normalize model size
+            const box = new THREE.Box3().setFromObject(clonedScene);
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+
+            // Normalize to fit in a 2x2x2 box
+            const normalizeScale = maxDim > 0 ? 2 / maxDim : 1;
+            clonedScene.scale.setScalar(normalizeScale * scale);
+
+            // Center the model
+            const center = box.getCenter(new THREE.Vector3());
+            clonedScene.position.sub(center.multiplyScalar(normalizeScale * scale));
+
+            // Apply materials and shadows to all meshes
+            clonedScene.traverse((child) => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                    if (child.material) {
+                        child.material.roughness = 0.5;
+                        child.material.metalness = 0.2;
+                    }
+                }
+            });
+
+            console.log('âœ… Model loaded and normalized:', modelPath, 'scale:', normalizeScale);
+            onLoad?.();
+        }
+    }, [clonedScene, scale, modelPath, onLoad]);
+
+    if (!clonedScene) {
+        return null;
+    }
+
+    return (
+        <group ref={modelRef}>
+            <primitive object={clonedScene} />
+        </group>
+    );
+});
+
+GLTFModel.displayName = 'GLTFModel';
+
+// ============================================
+// ERROR BOUNDARY FOR 3D MODELS
+// ============================================
+
+/**
+ * Simple Error Boundary for catching model loading errors
+ */
+class ModelErrorBoundary extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = { hasError: false, error: null };
+    }
+
+    static getDerivedStateFromError(error) {
+        return { hasError: true, error };
+    }
+
+    // eslint-disable-next-line no-unused-vars
+    componentDidCatch(error, errorInfo) {
+        console.log('Model loading error caught:', error);
+        this.props.onError?.(error);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return this.props.fallback || null;
+        }
+        return this.props.children;
+    }
+}
+
+// ============================================
+// MODEL CONTENT (Inner Canvas Component)
+// ============================================
+
+/**
+ * ModelContent Component
+ * Handles the actual 3D scene content
+ */
+const ModelContent = memo(({
+    modelPath,
+    letter,
+    scale = 1,
+    autoRotate = false,
+    onLoad,
+    onError,
+    controlsRef
+}) => {
+    const [modelFailed, setModelFailed] = useState(false);
+    const pendingErrorRef = useRef(null);
+    const { camera } = useThree();
+
+    // Reset camera position
+    useEffect(() => {
+        camera.position.set(0, 0, 5);
+        camera.lookAt(0, 0, 0);
+        // eslint-disable-next-line no-unused-vars
+        const trigger = letter; // Dummy use to satisfy linter
+    }, [camera, letter]);
+
+    // Handle model error with deferred state update to avoid setState during render
+    const handleModelError = useCallback((error) => {
+        // Store the error to be processed in useEffect
+        pendingErrorRef.current = error;
+    }, []);
+
+    // Process pending error in useEffect to avoid setState during render
+    useEffect(() => {
+        if (pendingErrorRef.current && !modelFailed) {
+            console.log('Model failed to load, using placeholder:', pendingErrorRef.current);
+            // Defers state update to next tick to prevent cascading render warnings
+            setTimeout(() => {
+                setModelFailed(true);
+                onError?.(pendingErrorRef.current);
+                pendingErrorRef.current = null;
+            }, 0);
+        }
+    });
+
+    // Reset error state when model changes
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setModelFailed(false);
+            pendingErrorRef.current = null;
+        }, 0);
+        return () => clearTimeout(timer);
+    }, [modelPath, letter]);
+
+    // Letter-based color palette
+    const letterColors = {
+        A: '#6366F1', B: '#8B5CF6', C: '#EC4899', D: '#10B981',
+        E: '#F59E0B', F: '#EF4444', G: '#6366F1', H: '#8B5CF6',
+        I: '#EC4899', J: '#10B981', K: '#F59E0B', L: '#EF4444',
+        M: '#6366F1', N: '#8B5CF6', O: '#EC4899', P: '#10B981',
+        Q: '#F59E0B', R: '#EF4444', S: '#6366F1', T: '#8B5CF6',
+        U: '#EC4899', V: '#10B981', W: '#F59E0B', X: '#EF4444',
+        Y: '#6366F1', Z: '#8B5CF6',
+    };
+
+    return (
+        <>
+            {/* Lighting Setup */}
+            <ambientLight intensity={0.5} />
+            <directionalLight
+                position={[5, 5, 5]}
+                intensity={1}
+                castShadow
+                shadow-mapSize-width={1024}
+                shadow-mapSize-height={1024}
+            />
+            <directionalLight
+                position={[-5, 3, -5]}
+                intensity={0.5}
+            />
+            <directionalLight
+                position={[0, -5, 0]}
+                intensity={0.3}
+            />
+
+            {/* Environment for reflections */}
+            <Environment preset="city" />
+
+            {/* Model or Placeholder */}
+            {modelPath && !modelFailed ? (
+                <ModelErrorBoundary
+                    onError={handleModelError}
+                    fallback={<PlaceholderModel letter={letter} color={letterColors[letter] || '#6366F1'} />}
+                >
+                    <Suspense fallback={<PlaceholderModel letter={letter} color={letterColors[letter] || '#6366F1'} />}>
+                        <GLTFModel
+                            modelPath={modelPath}
+                            scale={scale}
+                            onLoad={onLoad}
+                        />
+                    </Suspense>
+                </ModelErrorBoundary>
+            ) : (
+                <PlaceholderModel letter={letter} color={letterColors[letter] || '#6366F1'} />
+            )}
+
+            {/* OrbitControls */}
+            <OrbitControls
+                ref={controlsRef}
+                enableRotate={true}
+                enableZoom={true}
+                enablePan={false}
+                minDistance={2}
+                maxDistance={10}
+                enableDamping={true}
+                dampingFactor={0.05}
+                autoRotate={autoRotate}
+                autoRotateSpeed={2}
+            />
+        </>
+    );
+});
+
+ModelContent.displayName = 'ModelContent';
+
+// ============================================
+// MAIN COMPONENT
+// ============================================
+
+/**
+ * HandModel3D Component
+ * Complete 3D model viewer with Canvas setup
+ * 
+ * @param {string} modelPath - Path to GLTF model file
+ * @param {string} letter - Letter being displayed (for placeholder)
+ * @param {number} scale - Model scale (default: 1)
+ * @param {boolean} autoRotate - Enable auto-rotation
+ * @param {function} onLoad - Callback when model loads
+ * @param {function} onError - Callback on error
+ * @param {object} controlsRef - Ref for OrbitControls
+ */
+const HandModel3D = memo(({
+    modelPath,
+    letter = 'A',
+    scale = 1,
+    autoRotate = false,
+    onLoad,
+    onError,
+    controlsRef,
+    className = '',
+}) => {
+    return (
+        <div className={`w-full h-full ${className}`}>
+            <Canvas
+                camera={{
+                    position: [0, 0, 5],
+                    fov: 50,
+                    near: 0.1,
+                    far: 1000,
+                }}
+                shadows
+                gl={{
+                    antialias: true,
+                    alpha: true,
+                    powerPreference: 'high-performance',
+                }}
+                dpr={[1, 2]}
+            >
+                <color attach="background" args={['#1E293B']} />
+                <ModelContent
+                    modelPath={modelPath}
+                    letter={letter}
+                    scale={scale}
+                    autoRotate={autoRotate}
+                    onLoad={onLoad}
+                    onError={onError}
+                    controlsRef={controlsRef}
+                />
+            </Canvas>
+        </div>
+    );
+});
+
+HandModel3D.displayName = 'HandModel3D';
+
+export default HandModel3D;
+/**
+ * ModelControls Component
+ * Toolbar with control buttons for the 3D viewer
+ */
+
+import { memo } from 'react';
+import { motion } from 'framer-motion';
+import {
+    RotateCcw,
+    RefreshCw,
+    ZoomIn,
+    ZoomOut,
+    Maximize2,
+    Pause,
+    Play
+} from 'lucide-react';
+
+/**
+ * Control Button Component
+ * Individual button with tooltip
+ */
+const ControlButton = memo(({
+    onClick,
+    icon: Icon,
+    label,
+    isActive = false,
+    disabled = false
+}) => (
+    <motion.button
+        whileHover={{ scale: disabled ? 1 : 1.05 }}
+        whileTap={{ scale: disabled ? 1 : 0.95 }}
+        onClick={onClick}
+        disabled={disabled}
+        className={`
+      relative group p-2.5 rounded-lg transition-all duration-200
+      ${isActive
+                ? 'bg-primary text-white shadow-lg shadow-primary/25'
+                : 'bg-dark-700 text-dark-300 hover:bg-dark-600 hover:text-dark-100'
+            }
+      ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+    `}
+        aria-label={label}
+        title={label}
+    >
+        <Icon className="w-4 h-4" />
+
+        {/* Tooltip */}
+        <span className="
+      absolute bottom-full left-1/2 -translate-x-1/2 mb-2
+      px-2 py-1 text-xs text-white bg-dark-900 rounded
+      opacity-0 group-hover:opacity-100 transition-opacity
+      whitespace-nowrap pointer-events-none z-10
+    ">
+            {label}
+        </span>
+    </motion.button>
+));
+
+ControlButton.displayName = 'ControlButton';
+
+/**
+ * ModelControls Component
+ * 
+ * @param {function} onResetView - Reset camera to default position
+ * @param {function} onToggleAutoRotate - Toggle auto-rotation
+ * @param {function} onZoomIn - Zoom camera in
+ * @param {function} onZoomOut - Zoom camera out
+ * @param {function} onFullscreen - Toggle fullscreen (optional)
+ * @param {boolean} isAutoRotating - Current auto-rotate state
+ * @param {string} className - Additional CSS classes
+ */
+const ModelControls = memo(({
+    onResetView,
+    onToggleAutoRotate,
+    onZoomIn,
+    onZoomOut,
+    onFullscreen,
+    isAutoRotating = false,
+    className = '',
+}) => {
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className={`
+        flex items-center gap-2 p-2 
+        bg-dark-800/90 backdrop-blur-sm 
+        rounded-xl border border-dark-700
+        ${className}
+      `}
+        >
+            {/* Reset View */}
+            <ControlButton
+                onClick={onResetView}
+                icon={RotateCcw}
+                label="Reset View"
+            />
+
+            {/* Divider */}
+            <div className="w-px h-6 bg-dark-600" />
+
+            {/* Auto Rotate Toggle */}
+            <ControlButton
+                onClick={onToggleAutoRotate}
+                icon={isAutoRotating ? Pause : RefreshCw}
+                label={isAutoRotating ? 'Stop Rotation' : 'Auto Rotate'}
+                isActive={isAutoRotating}
+            />
+
+            {/* Divider */}
+            <div className="w-px h-6 bg-dark-600" />
+
+            {/* Zoom Controls */}
+            <ControlButton
+                onClick={onZoomIn}
+                icon={ZoomIn}
+                label="Zoom In"
+            />
+            <ControlButton
+                onClick={onZoomOut}
+                icon={ZoomOut}
+                label="Zoom Out"
+            />
+
+            {/* Fullscreen (optional) */}
+            {onFullscreen && (
+                <>
+                    <div className="w-px h-6 bg-dark-600" />
+                    <ControlButton
+                        onClick={onFullscreen}
+                        icon={Maximize2}
+                        label="Fullscreen"
+                    />
+                </>
+            )}
+        </motion.div>
+    );
+});
+
+ModelControls.displayName = 'ModelControls';
+
+export default ModelControls;
+/**
+ * ModelViewer Component
+ * Main 3D viewer container with controls and state management
+ */
+
+import { useState, useRef, useCallback, useEffect, lazy, Suspense, memo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import ModelControls from './ModelControls';
+import ModelLoadingState from '../common/ModelLoadingState';
+import ModelErrorState from '../common/ModelErrorState';
+
+// Lazy load the 3D component for performance
+const HandModel3D = lazy(() => import('./HandModel3D'));
+
+/**
+ * ModelViewer Component
+ * 
+ * @param {string} letter - Letter to display (A-Z)
+ * @param {function} onModelLoad - Callback when model loads
+ * @param {boolean} showControls - Show control toolbar (default: true)
+ * @param {string} className - Additional CSS classes
+ */
+const ModelViewer = memo(({
+    letter = 'A',
+    onModelLoad,
+    showControls = true,
+    className = '',
+}) => {
+    const [isLoading, setIsLoading] = useState(true);
+    const [hasError, setHasError] = useState(false);
+    const [autoRotate, setAutoRotate] = useState(false);
+    const controlsRef = useRef(null);
+
+    // Model path based on letter
+    const modelPath = `/models/alphabet/letter_${letter}.glb`;
+
+    // Handle model load success
+    const handleLoad = useCallback(() => {
+        console.log(`âœ… Model loaded: ${letter}`);
+        setIsLoading(false);
+        setHasError(false);
+        onModelLoad?.(letter);
+    }, [letter, onModelLoad]);
+
+    // Handle model load error
+    const handleError = useCallback((error) => {
+        console.log(`âš ï¸ Model error for ${letter}:`, error);
+        setIsLoading(false);
+        setHasError(true);
+    }, [letter]);
+
+    // Handle retry
+    const handleRetry = useCallback(() => {
+        setIsLoading(true);
+        setHasError(false);
+    }, []);
+
+    // Reset view to default camera position
+    const handleResetView = useCallback(() => {
+        if (controlsRef.current) {
+            controlsRef.current.reset();
+        }
+    }, []);
+
+    // Toggle auto-rotation
+    const handleToggleAutoRotate = useCallback(() => {
+        setAutoRotate(prev => !prev);
+    }, []);
+
+    // Zoom controls - OrbitControls uses camera position, not dollyTo
+    const handleZoomIn = useCallback(() => {
+        if (controlsRef.current) {
+            const camera = controlsRef.current.object;
+            const direction = camera.position.clone().normalize();
+            const newDistance = Math.max(camera.position.length() - 1, 2);
+            camera.position.copy(direction.multiplyScalar(newDistance));
+            controlsRef.current.update();
+        }
+    }, []);
+
+    const handleZoomOut = useCallback(() => {
+        if (controlsRef.current) {
+            const camera = controlsRef.current.object;
+            const direction = camera.position.clone().normalize();
+            const newDistance = Math.min(camera.position.length() + 1, 10);
+            camera.position.copy(direction.multiplyScalar(newDistance));
+            controlsRef.current.update();
+        }
+    }, []);
+
+    // Reset state when letter changes
+    useEffect(() => {
+        setIsLoading(true);
+        setHasError(false);
+    }, [letter]);
+
+    // Simulate model load completion (since we're using placeholder)
+    // In production, this would be called by the actual model loader
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 1500);
+        return () => clearTimeout(timer);
+    }, []);
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
+            className={`
+        relative overflow-hidden
+        bg-dark-800 rounded-2xl
+        border border-dark-700
+        shadow-xl shadow-black/20
+        ${className}
+      `}
+        >
+            {/* Letter Badge */}
+            <div className="absolute top-4 left-4 z-10">
+                <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 300, delay: 0.2 }}
+                    className="
+            w-12 h-12 rounded-xl
+            bg-gradient-to-br from-primary to-secondary
+            flex items-center justify-center
+            text-2xl font-bold text-white
+            shadow-lg shadow-primary/30
+          "
+                >
+                    {letter}
+                </motion.div>
+            </div>
+
+            {/* Placeholder indicator */}
+            <div className="absolute top-4 right-4 z-10">
+                <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="
+            px-3 py-1.5 rounded-full
+            bg-dark-700/80 backdrop-blur-sm
+            text-xs text-dark-300
+            border border-dark-600
+          "
+                >
+                    3D Preview
+                </motion.div>
+            </div>
+
+            {/* Model Container */}
+            <div className="
+        w-full aspect-square
+        sm:aspect-[4/3]
+        md:aspect-[16/10]
+        min-h-[300px]
+        sm:min-h-[400px]
+        lg:min-h-[500px]
+      ">
+                <div className="relative w-full h-full">
+                    <AnimatePresence mode="wait">
+                        {hasError ? (
+                            <motion.div
+                                key="error"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="absolute inset-0 z-20 bg-dark-800"
+                            >
+                                <ModelErrorState onRetry={handleRetry} />
+                            </motion.div>
+                        ) : isLoading ? (
+                            <motion.div
+                                key="loading"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="absolute inset-0 z-20 bg-dark-800"
+                            >
+                                <ModelLoadingState message={`Loading ${letter}...`} />
+                            </motion.div>
+                        ) : null}
+                    </AnimatePresence>
+
+                    {!hasError && (
+                        <motion.div
+                            key="model"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="w-full h-full"
+                        >
+                            <Suspense fallback={null}>
+                                <HandModel3D
+                                    modelPath={modelPath}
+                                    letter={letter}
+                                    autoRotate={autoRotate}
+                                    onLoad={handleLoad}
+                                    onError={handleError}
+                                    controlsRef={controlsRef}
+                                />
+                            </Suspense>
+                        </motion.div>
+                    )}
+                </div>
+            </div>
+
+            {/* Controls Toolbar */}
+            {showControls && !isLoading && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
+                    <ModelControls
+                        onResetView={handleResetView}
+                        onToggleAutoRotate={handleToggleAutoRotate}
+                        onZoomIn={handleZoomIn}
+                        onZoomOut={handleZoomOut}
+                        isAutoRotating={autoRotate}
+                    />
+                </div>
+            )}
+
+            {/* Interaction hint */}
+            {!isLoading && !hasError && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1 }}
+                    className="
+            absolute bottom-16 left-1/2 -translate-x-1/2 z-10
+            text-xs text-dark-400 pointer-events-none
+          "
+                >
+                    Drag to rotate â€¢ Scroll to zoom
+                </motion.div>
+            )}
+        </motion.div>
+    );
+});
+
+ModelViewer.displayName = 'ModelViewer';
+
+export default ModelViewer;
