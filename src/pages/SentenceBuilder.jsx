@@ -173,11 +173,11 @@ const FreeFlowMode = () => {
 
         frameId = requestAnimationFrame(processFrame);
         return () => cancelAnimationFrame(frameId);
-    }, [isDetecting, handDetected, detectionResult, practiceWord, isPracticeSuccess]);
+    }, [isDetecting, handDetected, detectionResult, practiceWord, isPracticeSuccess, dwellProgress]);
 
     useEffect(() => {
         return () => stopDetection();
-    }, []);
+    }, [stopDetection]);
 
     const handleTranslate = async () => {
         setIsTranslating(true);
@@ -226,12 +226,9 @@ const FreeFlowMode = () => {
                 )}
             </AnimatePresence>
 
-            {/* 🚀 终极布局防爆裂设计：Flex Stretch + Min-H-0 */}
             <div className={`flex flex-col ${practiceWord ? 'lg:flex-row items-stretch' : ''} gap-6 w-full transition-all duration-500`}>
                 
-                {/* 左侧：摄像头区域主导高度 (flex-[2] 代表占约 66% 宽度) */}
                 <div className={`relative glass-card p-2 rounded-2xl overflow-hidden shadow-2xl flex flex-col justify-center transition-all duration-500 ${practiceWord ? 'lg:flex-[2] shrink-0' : 'w-full'}`}>
-                    {/* aspect-video 强制锁定 16:9 的视频比例，这是整个布局的高度基准 */}
                     <div className="relative w-full bg-dark-900 rounded-xl overflow-hidden aspect-video flex items-center justify-center">
                         <CameraFeed
                             videoRef={videoRef} canvasRef={canvasRef} isActive={isCameraActive}
@@ -272,10 +269,7 @@ const FreeFlowMode = () => {
                                             {practiceProgress > 0 ? "Hold it steady..." : "Scanning Sign..."}
                                         </span>
                                         <div className="w-full h-2 bg-dark-800 rounded-full overflow-hidden border border-dark-700">
-                                            <div 
-                                                className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-100 ease-linear"
-                                                style={{ width: `${practiceProgress}%` }}
-                                            />
+                                            <div className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-100 ease-linear" style={{ width: `${practiceProgress}%` }} />
                                         </div>
                                     </div>
                                 </motion.div>
@@ -310,49 +304,33 @@ const FreeFlowMode = () => {
                     </div>
                 </div>
 
-                {/* 右侧：队友的 3D 模型区域 (flex-[1] 代表占 33% 宽度，且高度被强制拉平) */}
                 <AnimatePresence>
                     {practiceWord && (
                         <motion.div 
-                            initial={{ opacity: 0, x: 20, width: 0 }} 
-                            animate={{ opacity: 1, x: 0, width: 'auto' }} 
-                            exit={{ opacity: 0, x: 20, width: 0 }}
+                            initial={{ opacity: 0, x: 20, width: 0 }} animate={{ opacity: 1, x: 0, width: 'auto' }} exit={{ opacity: 0, x: 20, width: 0 }}
                             className="lg:flex-[1] w-full flex flex-col min-w-[280px]"
                         >
                             <div className="glass-card flex-1 flex flex-col border border-dark-600 shadow-2xl rounded-2xl bg-dark-800/80 overflow-hidden relative">
-                                
-                                {/* 标题栏 */}
                                 <div className="p-4 border-b border-dark-700 shrink-0 bg-dark-900/40">
                                     <h3 className="text-xs font-bold text-dark-400 uppercase tracking-widest flex items-center gap-2">
                                         <Sparkles className="w-4 h-4 text-primary" /> 3D Reference
                                     </h3>
                                 </div>
-                                
-                                {/* 核心黑魔法：min-h-0 强制内部组件(ModelViewer)收缩，绝不撑大外层 */}
                                 <div className="flex-1 min-h-0 p-4 flex flex-col items-center justify-center relative">
                                     <div className="w-full flex-1 relative flex items-center justify-center min-h-0">
-                                        {/* 队友的 ModelViewer，就算它报错，也只会在这个框里报错，不会影响整体布局 */}
-                                        {/* 传入完整的单词(Love)，并加上 flex-1 h-full 强制约束它的高度 */}
-                                            <ModelViewer 
-                                                letter={practiceWord} 
-                                                className="flex-1 w-full min-h-0 h-full" 
-                                            />
+                                            <ModelViewer letter={practiceWord} className="flex-1 w-full min-h-0 h-full" />
                                     </div>
-                                    
-                                    {/* 底部文字 */}
                                     <div className="text-center shrink-0 w-full mt-2 bg-dark-900/60 py-3 rounded-xl border border-dark-700/50 backdrop-blur-sm">
                                         <p className="text-2xl font-black text-white capitalize tracking-wide drop-shadow-md">{practiceWord}</p>
                                         <p className="text-xs text-primary mt-1 opacity-80">Target Sign</p>
                                     </div>
                                 </div>
-
                             </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
             </div>
 
-            {/* 底部：Sentence Dock */}
             <AnimatePresence>
                 {!practiceWord && (
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}>
@@ -366,7 +344,7 @@ const FreeFlowMode = () => {
                             
                             <div className="flex-1 flex items-center gap-2 flex-wrap mb-4 bg-dark-800/50 p-4 rounded-xl border border-dark-600 shadow-inner">
                                 {sentence.length === 0 ? (
-                                    <p className="text-dark-500 italic w-full text-center py-2">No words captured yet. Sign continuously to build...</p>
+                                    <p className="text-dark-500 italic w-full text-center py-2">No words captured yet...</p>
                                 ) : (
                                     sentence.map((word, idx) => (
                                         <motion.div key={idx} initial={{ scale: 0, x: -20 }} animate={{ scale: 1, x: 0 }}
@@ -385,7 +363,6 @@ const FreeFlowMode = () => {
                             )}
                         </div>
 
-                        {/* Gemini 反馈与练习推荐 */}
                         {translationResult && (
                             <motion.div 
                                 initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
@@ -397,14 +374,11 @@ const FreeFlowMode = () => {
                                         <h4 className="text-sm text-dark-300 uppercase tracking-wider mb-1">Smooth English</h4>
                                         <p className="text-2xl font-bold text-white mb-4">{translationResult.smoothEnglish}</p>
                                         
-                                        {/* 🚀 完美复刻队友的 Grammar Note UI */}
                                         <div className="flex items-start gap-3 p-4 rounded-xl bg-primary/5 border border-primary/20 mb-6 mt-4 shadow-inner">
                                             <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5 drop-shadow-md" />
                                             <div>
                                                 <p className="text-sm font-bold text-dark-200 mb-1 tracking-wide">Grammar Note</p>
-                                                <p className="text-sm text-dark-400 leading-relaxed">
-                                                {translationResult.feedback}
-                                                </p>
+                                                <p className="text-sm text-dark-400 leading-relaxed">{translationResult.feedback}</p>
                                             </div>
                                         </div>
 
@@ -416,27 +390,16 @@ const FreeFlowMode = () => {
                                                 <div className="flex flex-wrap gap-4">
                                                     {translationResult.missingSigns.slice(0, 2).map((sign, idx) => (
                                                         <div 
-                                                            key={idx} 
-                                                            onClick={() => setPracticeWord(sign)} 
+                                                            key={idx} onClick={() => setPracticeWord(sign)} 
                                                             className="group flex items-center gap-4 bg-dark-800 p-4 rounded-2xl border-2 border-dark-600 hover:border-primary cursor-pointer transition-all hover:scale-105 shadow-xl hover:shadow-primary/30"
                                                         >
-                                                            <div className="w-20 h-20 rounded-xl bg-dark-900 border border-primary/20 flex items-center justify-center relative overflow-hidden group-hover:bg-primary/5 transition-colors">
-                                                                <Hand className="w-10 h-10 text-primary/20 absolute z-0" />
-                                                                <svg className="absolute inset-0 w-full h-full z-10 drop-shadow-md" viewBox="0 0 100 100">
-                                                                    <path d="M50 90 L30 50 M50 90 L45 45 M50 90 L60 45 M50 90 L75 50" stroke="rgba(99, 102, 241, 0.4)" strokeWidth="2" fill="none"/>
-                                                                    <path d="M30 50 L20 30 L15 15 M45 45 L40 20 L35 10 M60 45 L65 20 L70 10 M75 50 L85 30 L90 15" stroke="rgba(139, 92, 246, 0.6)" strokeWidth="2" fill="none"/>
-                                                                    <circle cx="50" cy="90" r="3" fill="#EC4899"/>
-                                                                    <circle cx="30" cy="50" r="2.5" fill="#8B5CF6"/> <circle cx="20" cy="30" r="2" fill="#8B5CF6"/> <circle cx="15" cy="15" r="2.5" fill="#6366F1"/>
-                                                                    <circle cx="45" cy="45" r="2.5" fill="#8B5CF6"/> <circle cx="40" cy="20" r="2" fill="#8B5CF6"/> <circle cx="35" cy="10" r="2.5" fill="#6366F1"/>
-                                                                    <circle cx="60" cy="45" r="2.5" fill="#8B5CF6"/> <circle cx="65" cy="20" r="2" fill="#8B5CF6"/> <circle cx="70" cy="10" r="2.5" fill="#6366F1"/>
-                                                                    <circle cx="75" cy="50" r="2.5" fill="#8B5CF6"/> <circle cx="85" cy="30" r="2" fill="#8B5CF6"/> <circle cx="90" cy="15" r="2.5" fill="#6366F1"/>
-                                                                </svg>
+                                                            <div className="w-16 h-16 rounded-xl bg-dark-900 border border-primary/20 flex items-center justify-center relative overflow-hidden">
+                                                                <Hand className="w-8 h-8 text-primary/20" />
+                                                                <svg className="absolute inset-0 w-full h-full z-10" viewBox="0 0 100 100"><path d="M50 90 L30 50 M50 90 L45 45 M50 90 L60 45 M50 90 L75 50" stroke="rgba(99,102,241,0.4)" strokeWidth="2" fill="none"/><circle cx="50" cy="90" r="3" fill="#EC4899"/></svg>
                                                             </div>
                                                             <div>
-                                                                <p className="text-white font-extrabold text-2xl capitalize tracking-wide group-hover:text-primary transition-colors">{sign}</p>
-                                                                <p className="text-sm text-primary mt-1 flex items-center gap-1 opacity-80 group-hover:opacity-100 font-medium">
-                                                                    <Camera className="w-4 h-4"/> Click to practice
-                                                                </p>
+                                                                <p className="text-white font-extrabold text-xl capitalize tracking-wide">{sign}</p>
+                                                                <p className="text-xs text-primary mt-1 flex items-center gap-1"><Camera className="w-3 h-3"/> Practice</p>
                                                             </div>
                                                         </div>
                                                     ))}
@@ -464,11 +427,6 @@ const SentenceBuilder = () => {
     const [currentStep, setCurrentStep] = useState(STEPS.INPUT);
     const [sentenceData, setSentenceData] = useState({ original: '', aslWords: [], explanation: '' });
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
-    
-    // eslint-disable-next-line no-unused-vars
-    const [learnMode, setLearnMode] = useState('sequence'); 
-    // eslint-disable-next-line no-unused-vars
-    const [practiceResults, setPracticeResults] = useState(null);
     
     const [savedSentences, setSavedSentences] = useState([]);
     const [showSavedSentences, setShowSavedSentences] = useState(false);
@@ -500,11 +458,11 @@ const SentenceBuilder = () => {
     const handleWordSelect = useCallback((word, index) => { setCurrentWordIndex(index); }, []);
 
     const handlePracticeComplete = useCallback(async (results) => {
-        setPracticeResults(results); setCurrentStep(STEPS.COMPLETE);
+        setCurrentStep(STEPS.COMPLETE);
         if (user?.uid) {
             setIsSaving(true);
             try {
-                const sentenceRecord = { id: Date.now().toString(), original: sentenceData.original, aslWords: sentenceData.aslWords, accuracy: results.averageAccuracy, duration: results.duration, completedAt: Date.now() };
+                const sentenceRecord = { id: Date.now().toString(), original: sentenceData.original, aslWords: sentenceData.aslWords, accuracy: results.averageAccuracy, completedAt: Date.now() };
                 await savePracticedSentence(user.uid, sentenceRecord);
                 setSavedSentences(prev => [sentenceRecord, ...prev]);
             } catch (error) { console.error(error); } finally { setIsSaving(false); }
@@ -513,7 +471,7 @@ const SentenceBuilder = () => {
 
     const handlePracticeExit = useCallback(() => {
         setCurrentStep(STEPS.INPUT); setSentenceData({ original: '', aslWords: [], explanation: '' });
-        setCurrentWordIndex(0); setPracticeResults(null);
+        setCurrentWordIndex(0);
     }, []);
 
     const handlePracticeSaved = useCallback((sentence) => {
@@ -574,17 +532,25 @@ const SentenceBuilder = () => {
                                         const Icon = step.icon; 
                                         const isActive = step.id === currentStep; 
                                         const isCompleted = getStepIndex(currentStep) > index;
+                                        const hasData = sentenceData.aslWords.length > 0;
+                                        const isClickable = hasData || step.id === STEPS.INPUT;
+
                                         return (
                                             <div key={step.id} className="flex items-center">
-                                                {/* 🚀 核心修改：将 div 换成 button，加入 onClick 事件和悬浮动效，支持全局自由跳转！ */}
                                                 <button 
-                                                    onClick={() => setCurrentStep(step.id)}
-                                                    className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-sm ${isActive ? 'bg-primary text-white shadow-primary/30' : isCompleted ? 'bg-success/20 text-success hover:bg-success/30' : 'bg-dark-700/50 text-dark-400 hover:bg-dark-600'}`}
+                                                    onClick={() => isClickable && setCurrentStep(step.id)}
+                                                    disabled={!isClickable}
+                                                    className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all shadow-sm ${
+                                                        isActive ? 'bg-primary text-white shadow-primary/30 cursor-default' : 
+                                                        isCompleted ? 'bg-success/20 text-success hover:bg-success/30 cursor-pointer hover:scale-105 active:scale-95' :
+                                                        isClickable ? 'bg-dark-700/50 text-dark-300 hover:bg-dark-600 hover:text-white cursor-pointer hover:scale-105 active:scale-95' : 
+                                                        'bg-dark-800/30 text-dark-600 cursor-not-allowed opacity-50'
+                                                    }`}
                                                 >
                                                     <Icon className="w-5 h-5" /> 
                                                     <span className="hidden md:inline text-sm font-bold tracking-wide">{step.label}</span>
                                                 </button>
-                                                {index < STEP_CONFIG.length - 1 && <ChevronRight className="w-5 h-5 text-dark-500 mx-1 md:mx-2" />}
+                                                {index < STEP_CONFIG.length - 1 && <ChevronRight className="w-5 h-5 text-dark-600 mx-1 md:mx-2" />}
                                             </div>
                                         );
                                     })}
@@ -593,7 +559,6 @@ const SentenceBuilder = () => {
                         )}
 
                         <AnimatePresence mode="wait">
-                            {/* The rest of the guided mode code remains exactly the same */}
                             {showSavedSentences && currentStep === STEPS.INPUT && (
                                 <motion.div key="saved" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
                                     <SavedSentences sentences={savedSentences} onPractice={handlePracticeSaved} onDelete={handleDeleteSentence} />
@@ -610,8 +575,8 @@ const SentenceBuilder = () => {
                                     <div className="flex flex-wrap gap-4 justify-between">
                                         <Button variant="outline" onClick={() => setCurrentStep(STEPS.INPUT)} leftIcon={<ChevronLeft className="w-4 h-4" />}>New Sentence</Button>
                                         <div className="flex gap-3">
-                                            <Button variant="secondary" onClick={() => { setLearnMode('sequence'); goToNextStep(); }} leftIcon={<GraduationCap className="w-4 h-4" />}>Watch Sequence</Button>
-                                            <Button variant="primary" onClick={() => { setLearnMode('practice'); setCurrentStep(STEPS.PRACTICE); }} leftIcon={<Camera className="w-4 h-4" />}>Start Practice</Button>
+                                            <Button variant="secondary" onClick={() => goToNextStep()} leftIcon={<GraduationCap className="w-4 h-4" />}>Watch Sequence</Button>
+                                            <Button variant="primary" onClick={() => setCurrentStep(STEPS.PRACTICE)} leftIcon={<Camera className="w-4 h-4" />}>Start Practice</Button>
                                         </div>
                                     </div>
                                 </motion.div>
@@ -639,7 +604,7 @@ const SentenceBuilder = () => {
                                     <p className="text-xl text-dark-300 mb-8">"{sentenceData.original}"</p>
                                     {isSaving && <p className="text-sm text-dark-400 mb-4">Saving your progress...</p>}
                                     <div className="flex flex-wrap justify-center gap-4">
-                                        <Button variant="outline" onClick={() => { setCurrentStep(STEPS.BREAKDOWN); setPracticeResults(null); }} leftIcon={<ArrowLeft className="w-4 h-4" />}>Practice Again</Button>
+                                        <Button variant="outline" onClick={() => { setCurrentStep(STEPS.BREAKDOWN); }} leftIcon={<ArrowLeft className="w-4 h-4" />}>Practice Again</Button>
                                         <Button variant="primary" onClick={handlePracticeExit} leftIcon={<Home className="w-4 h-4" />}>New Sentence</Button>
                                     </div>
                                 </motion.div>

@@ -282,102 +282,60 @@ const WordPractice = ({
                 </div>
             )}
 
-            {/* Main Content - Split View */}
-            <div className="grid md:grid-cols-2 gap-6 items-stretch">
-                {/* Reference Model */}
-                <div className="relative h-64 md:h-80 rounded-xl overflow-hidden bg-dark-700/50 flex flex-col border border-dark-600">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full items-stretch mb-8">
+                
+                {/* 🚀 左侧：3D Reference (占 50%) */}
+                <div className="relative aspect-video rounded-2xl overflow-hidden bg-dark-800/50 border border-dark-600 shadow-inner flex flex-col">
                     <div className="absolute top-3 left-3 z-10 px-3 py-1 rounded-lg bg-dark-800/90 border border-dark-700">
-                        <span className="text-sm text-dark-300">Reference</span>
+                        <span className="text-xs font-bold text-dark-300 uppercase tracking-widest">Reference</span>
                     </div>
                     <div className="flex-1 relative cursor-move">
                         <Suspense fallback={<div className="w-full h-full flex items-center justify-center"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>}>
-                            <HandModel3D
-                                letter={targetSignDisplay}
-                                // 🚀 核心：如果是整词模式，传 null 触发紫色方块。否则加载具体字母模型。
-                                modelPath={isWholeWordMode ? null : `/models/alphabet/letter_${currentLetterChar}.glb`}
-                                autoRotate={true}
+                            <HandModel3D 
+                                letter={targetSignDisplay} 
+                                modelPath={isWholeWordMode ? null : `/models/alphabet/letter_${currentLetterChar}.glb`} 
+                                autoRotate={true} 
                             />
                         </Suspense>
                     </div>
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[10px] text-dark-400 uppercase tracking-widest bg-dark-900/80 px-4 py-1.5 rounded-full backdrop-blur-md border border-dark-700">DRAG TO ROTATE</div>
+                </div>
+
+                {/* 🚀 右侧：Your Sign / Camera (占 50%) */}
+                <div className="relative aspect-video rounded-2xl overflow-hidden bg-black border border-dark-600 shadow-inner flex items-center justify-center">
+                    <div className="absolute top-3 left-3 z-20 px-3 py-1 rounded-lg bg-dark-800/90 border border-dark-700">
+                        <span className="text-xs font-bold text-dark-300 uppercase tracking-widest">Your Sign</span>
+                    </div>
+
+                    <CameraFeed
+                        videoRef={videoRef} canvasRef={canvasRef} isActive={isCameraActive}
+                        isLoading={isCameraLoading} isDetecting={isDetecting} handDetected={handDetected}
+                        onStart={() => startDetection()} onStop={() => stopDetection()} onRetry={() => startDetection()}
+                    />
+
+                    {/* 进度条 Overlay */}
+                    <AnimatePresence>
+                        {isCameraActive && handDetected && !isValidating && !validationResult?.isCorrect && (
+                            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-64">
+                                <div className="bg-dark-900/95 backdrop-blur-md p-3 rounded-xl border border-primary/40 shadow-xl flex flex-col items-center">
+                                    <span className="text-xs font-bold text-primary mb-2 uppercase tracking-widest">{practiceProgress > 0 ? "Hold still..." : "Scanning..."}</span>
+                                    <div className="w-full h-2 bg-dark-800 rounded-full overflow-hidden border border-dark-700">
+                                        <div className="h-full bg-gradient-to-r from-primary to-secondary transition-all" style={{ width: `${practiceProgress}%` }} />
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Start Button Overlay */}
+                    {!isCameraActive && !isCameraLoading && (
+                        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-4 bg-dark-900/90 backdrop-blur-sm">
+                            <Camera className="w-12 h-12 text-dark-400" />
+                            <Button variant="primary" onClick={() => startDetection()} leftIcon={<Camera className="w-4 h-4" />}>Start Camera</Button>
+                        </div>
+                    )}
                 </div>
             </div>
-                {/* Camera Feed */}
-                <div className="relative h-64 md:h-80 rounded-xl overflow-hidden bg-dark-950 flex flex-col border border-dark-600">
-                    <div className="absolute top-3 left-3 z-10 px-3 py-1 rounded-lg bg-dark-800/90 border border-dark-700">
-                        <span className="text-sm text-dark-300">Your Sign</span>
-                    </div>
-
-                    <div className="flex-1 relative bg-black flex items-center justify-center">
-                        {/* 🚀 修复 Camera：加上 absolute inset-0 强制铺满，避免尺寸塌陷 */}
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <CameraFeed
-                                videoRef={videoRef} canvasRef={canvasRef} isActive={isCameraActive}
-                                isLoading={isCameraLoading} isDetecting={isDetecting} handDetected={handDetected}
-                                onStart={() => startDetection()} onStop={() => stopDetection()} onRetry={() => startDetection()}
-                            />
-                        </div>
-
-                        {/* 🎯 自动检测进度条 */}
-                        <AnimatePresence>
-                            {!isValidating && !validationResult?.isCorrect && handDetected && cooldownRemaining === 0 && (
-                                <motion.div 
-                                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
-                                    className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-64"
-                                >
-                                    <div className="bg-dark-900/95 backdrop-blur-md p-3 rounded-xl border border-primary/40 shadow-xl flex flex-col items-center">
-                                        <span className="text-xs font-bold text-primary mb-2 uppercase tracking-widest">
-                                            {practiceProgress > 0 ? "Hold it steady..." : "Show Your Hand"}
-                                        </span>
-                                        <div className="w-full h-2 bg-dark-800 rounded-full overflow-hidden border border-dark-700">
-                                            <div className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-100 ease-linear" style={{ width: `${practiceProgress}%` }} />
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-
-                        {/* Validation Overlay (精确保留队友逻辑) */}
-                        <AnimatePresence>
-                            {validationResult && (
-                                <motion.div
-                                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                    className={`absolute inset-0 flex items-center justify-center z-30 ${validationResult.isCorrect ? 'bg-success/20 backdrop-blur-sm' : 'bg-error/20 backdrop-blur-sm'}`}
-                                >
-                                    {validationResult.isCorrect ? (
-                                        <motion.div initial={{ scale: 0, rotate: -180 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: "spring" }} className="bg-dark-900 p-6 rounded-full border-4 border-success shadow-lg">
-                                            <CheckCircle2 className="w-16 h-16 text-success" />
-                                        </motion.div>
-                                    ) : (
-                                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="bg-dark-900 p-6 rounded-full border-4 border-error shadow-lg">
-                                            <XCircle className="w-16 h-16 text-error" />
-                                        </motion.div>
-                                    )}
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-
-                        {/* 验证中的 Loading 遮罩 */}
-                        <AnimatePresence>
-                            {isValidating && (
-                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-30 bg-dark-900/80 backdrop-blur-sm flex flex-col items-center justify-center">
-                                    <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-                                    <p className="text-primary font-bold uppercase tracking-widest animate-pulse">AI is grading...</p>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-
-                        {/* 未开启摄像头时的占位 */}
-                        {!isCameraActive && !isCameraLoading && (
-                            <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-4 bg-dark-900/90 backdrop-blur-sm">
-                                <Camera className="w-12 h-12 text-dark-400" />
-                                {/* 🚀 修复点击事件：使用 () => startDetection() 确保正确触发 */}
-                                <Button variant="primary" onClick={() => startDetection()} leftIcon={<Camera className="w-4 h-4" />}>
-                                    Start Camera
-                                </Button>
-                            </div>
-                        )}
-                    </div>
-                </div>
 
             {/* Validation Result Box (精确保留队友原版) */}
             <AnimatePresence>
