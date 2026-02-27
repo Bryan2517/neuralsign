@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Play,
@@ -47,18 +48,25 @@ const SignSequence = ({ words = [], onWordSelect, currentWordIndex = 0 }) => {
     const letters = wordSign?.letters || [];
     const currentLetterChar = letters[currentLetter] || '';
 
-    // Reset letter when word changes
+    // 🚀 修复版：Reset letter when word changes (解决级联渲染报错)
     useEffect(() => {
-        setCurrentLetter(0);
+        const timer = setTimeout(() => {
+            setCurrentLetter(0);
+            // 如果你之前加过 setIsPlaying(false)，也可以写在这里
+        }, 0);
+        return () => clearTimeout(timer);
     }, [currentWord]);
 
-    // Sync with parent's currentWordIndex
+    // 🚀 修复版：Sync with parent's currentWordIndex (解决级联渲染报错)
     useEffect(() => {
-        if (currentWordIndex !== currentWord) {
-            setCurrentWord(currentWordIndex);
-            setCurrentLetter(0);
-        }
-    }, [currentWordIndex]);
+        const timer = setTimeout(() => {
+            if (currentWordIndex !== currentWord) {
+                setCurrentWord(currentWordIndex);
+                setCurrentLetter(0);
+            }
+        }, 0);
+        return () => clearTimeout(timer);
+    }, [currentWordIndex, currentWord]);
 
     // Auto-play logic
     useEffect(() => {

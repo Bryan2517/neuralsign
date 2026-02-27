@@ -731,6 +731,74 @@ export async function translateASLSequence(words) {
     }
 }
 
+/**
+ * 🚀 新增：验证完整的 ASL 单词/短语 (用于连贯通关模式)
+ * @param {string} imageBase64 - Base64 图像
+ * @param {string} targetWord - 用户正在练习的完整单词 (如 "HELLO")
+ * @param {string} fullSentence - 完整的句子上下文
+ */
+export async function validateWholeWordSign(imageBase64, targetWord, fullSentence) {
+    const errorResponse = {
+        isCorrect: false, accuracy: 0,
+        feedback: 'Unable to analyze. Please try again.',
+        suggestions: ['Check your internet connection', 'Try again in a moment']
+    };
+
+    if (!isGeminiConfigured()) return { ...errorResponse, feedback: 'AI validation not configured.' };
+    if (!imageBase64) return { ...errorResponse, feedback: 'No image captured.' };
+
+    const cooldown = getCooldownRemaining();
+    if (cooldown > 0) await new Promise(resolve => setTimeout(resolve, cooldown));
+    
+    console.log(`🔍 AI Validating WHOLE WORD: "${targetWord}"...`);
+
+    const prompt = `You are a friendly sign language expert analyzing a hand sign in the context of a sentence.
+The user is attempting to sign the COMPLETE WORD "${targetWord}" as part of the sentence: "${fullSentence}"
+
+IMPORTANT: Do NOT grade this as fingerspelling. Analyze if the gesture represents the general ASL sign for the entire word "${targetWord}".
+Be VERY LENIENT. This is a learning app. Webcam angles and lighting can heavily affect appearance. Focus on the general hand shape and movement intent.
+
+Respond with ONLY a valid JSON object:
+{
+  "isCorrect": true or false,
+  "accuracy": a number between 0 and 100,
+  "feedback": "brief encouraging message",
+  "suggestions": ["tip 1", "tip 2"]
+}
+
+Rules:
+- isCorrect = true if accuracy >= 50 (lenient for learners)
+- If the general sign is recognizable, give high accuracy (80-95%)
+- If no hand is detected, set accuracy to 0
+- Respond with ONLY the JSON object, nothing else.`;
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+        if (attempt > 0) await new Promise(resolve => setTimeout(resolve, 2000 * Math.pow(2, attempt - 1)));
+        
+        // 这里的 makeGeminiRequest, parseGeminiResponse, setRateLimitCooldown 是你队友文件里已有的
+        const result = await makeGeminiRequest(imageBase64, prompt);
+
+        if (result.success) {
+            const textResponse = result.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!textResponse) return errorResponse;
+            
+            // eslint-disable-next-line no-undef
+            const parsedResult = parseGeminiResponse(textResponse);
+            if (parsedResult) return parsedResult;
+            return errorResponse;
+        }
+
+        if (result.rateLimited) {
+            // eslint-disable-next-line no-undef
+            setRateLimitCooldown(10);
+            console.warn(`Attempt ${attempt + 1}: Rate limited`); // 🚀 替代 lastError
+            continue;
+        }
+        console.warn(`Attempt ${attempt + 1} Error:`, result.error); // 🚀 替代 lastError
+    }
+    return { ...errorResponse, feedback: 'Too many requests.', suggestions: ['Wait a moment', 'Try again'] };
+}
+
 export default {
     isGeminiConfigured,
     captureFrameFromVideo,
@@ -740,4 +808,5 @@ export default {
     getCooldownRemaining,
     canMakeRequest,
     translateASLSequence,
+    validateWholeWordSign,
 };

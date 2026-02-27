@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     MessageSquare, Sparkles, GraduationCap, Camera,
     ChevronRight, ChevronLeft, ArrowLeft, BookOpen,
-    Trophy, Home, Hand, CheckCircle, X, CheckCircle2
+    Trophy, Home, Hand, CheckCircle, X, CheckCircle2, Info
 } from 'lucide-react';
 import useAuthStore from '@/store/authStore';
 import { savePracticedSentence, getUserProgress } from '@/services/database';
@@ -397,8 +397,16 @@ const FreeFlowMode = () => {
                                         <h4 className="text-sm text-dark-300 uppercase tracking-wider mb-1">Smooth English</h4>
                                         <p className="text-2xl font-bold text-white mb-4">{translationResult.smoothEnglish}</p>
                                         
-                                        <h4 className="text-sm text-dark-300 uppercase tracking-wider mb-1">ASL Grammar Feedback</h4>
-                                        <p className="text-dark-100 mb-6 leading-relaxed">{translationResult.feedback}</p>
+                                        {/* 🚀 完美复刻队友的 Grammar Note UI */}
+                                        <div className="flex items-start gap-3 p-4 rounded-xl bg-primary/5 border border-primary/20 mb-6 mt-4 shadow-inner">
+                                            <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5 drop-shadow-md" />
+                                            <div>
+                                                <p className="text-sm font-bold text-dark-200 mb-1 tracking-wide">Grammar Note</p>
+                                                <p className="text-sm text-dark-400 leading-relaxed">
+                                                {translationResult.feedback}
+                                                </p>
+                                            </div>
+                                        </div>
 
                                         {translationResult.missingSigns && translationResult.missingSigns.length > 0 && (
                                             <div className="border-t border-success/20 pt-5">
@@ -563,13 +571,20 @@ const SentenceBuilder = () => {
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-8">
                                 <div className="flex items-center justify-center gap-2 md:gap-4">
                                     {STEP_CONFIG.map((step, index) => {
-                                        const Icon = step.icon; const isActive = step.id === currentStep; const isCompleted = getStepIndex(currentStep) > index;
+                                        const Icon = step.icon; 
+                                        const isActive = step.id === currentStep; 
+                                        const isCompleted = getStepIndex(currentStep) > index;
                                         return (
                                             <div key={step.id} className="flex items-center">
-                                                <div className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${isActive ? 'bg-primary/20 text-primary' : isCompleted ? 'bg-success/20 text-success' : 'bg-dark-700/50 text-dark-400'}`}>
-                                                    <Icon className="w-5 h-5" /> <span className="hidden md:inline text-sm font-medium">{step.label}</span>
-                                                </div>
-                                                {index < STEP_CONFIG.length - 1 && <ChevronRight className="w-5 h-5 text-dark-500 mx-1" />}
+                                                {/* 🚀 核心修改：将 div 换成 button，加入 onClick 事件和悬浮动效，支持全局自由跳转！ */}
+                                                <button 
+                                                    onClick={() => setCurrentStep(step.id)}
+                                                    className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-sm ${isActive ? 'bg-primary text-white shadow-primary/30' : isCompleted ? 'bg-success/20 text-success hover:bg-success/30' : 'bg-dark-700/50 text-dark-400 hover:bg-dark-600'}`}
+                                                >
+                                                    <Icon className="w-5 h-5" /> 
+                                                    <span className="hidden md:inline text-sm font-bold tracking-wide">{step.label}</span>
+                                                </button>
+                                                {index < STEP_CONFIG.length - 1 && <ChevronRight className="w-5 h-5 text-dark-500 mx-1 md:mx-2" />}
                                             </div>
                                         );
                                     })}
