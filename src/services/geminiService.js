@@ -3,7 +3,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 /**
  * Gemini AI Service
  * Handles communication with Google's Gemini Vision API for sign validation
- * * NeuralSign - AI Sign Language Learning Platform
+ * NeuralSign - AI Sign Language Learning Platform
  */
 
 // Gemini API configuration
@@ -68,7 +68,7 @@ export function isGeminiConfigured() {
 
 /**
  * Capture a frame from video element and convert to base64
- * * @param {HTMLVideoElement} videoElement - The video element to capture from
+ * @param {HTMLVideoElement} videoElement - The video element to capture from
  * @returns {string|null} Base64 encoded image data (without prefix) or null on error
  */
 export function captureFrameFromVideo(videoElement) {
@@ -164,7 +164,7 @@ async function makeGeminiRequest(imageBase64, prompt) {
 
 /**
  * Validate a hand sign using Gemini Vision API with retry logic
- * * @param {string} imageBase64 - Base64 encoded image (without prefix)
+ * @param {string} imageBase64 - Base64 encoded image (without prefix)
  * @param {string} targetLetter - The ASL letter the user is trying to sign
  * @returns {Promise<Object>} Validation result with isCorrect, accuracy, feedback, suggestions
  */
@@ -291,7 +291,7 @@ Rules for your response:
 /**
  * Parse Gemini response to extract JSON object
  * Handles cases where Gemini adds extra text or markdown
- * * @param {string} responseText - Raw text response from Gemini
+ * @param {string} responseText - Raw text response from Gemini
  * @returns {Object|null} Parsed result object or null
  */
 function parseGeminiResponse(responseText) {
@@ -329,7 +329,7 @@ function parseGeminiResponse(responseText) {
 
 /**
  * Validate and normalize the result object
- * * @param {Object} result - Parsed result object
+ * @param {Object} result - Parsed result object
  * @returns {Object} Normalized result
  */
 function validateAndNormalizeResult(result) {
@@ -351,7 +351,7 @@ function validateAndNormalizeResult(result) {
 
 /**
  * Validate a hand sign in the context of a sentence word
- * * @param {string} imageBase64 - Base64 encoded image (without prefix)
+ * @param {string} imageBase64 - Base64 encoded image (without prefix)
  * @param {string} targetWord - The word the user is trying to sign
  * @param {string} fullSentence - The complete sentence for context
  * @returns {Promise<Object>} Validation result
@@ -490,7 +490,7 @@ export function getGeminiInstance() {
 }
 
 // ============================================================================
-// 📚 GUIDED MODE: English to ASL Breakdown (Teammate's Original Feature)
+// Guided Mode: English to ASL Breakdown (Teammate's Original Feature)
 // ============================================================================
 
 /**
@@ -661,14 +661,14 @@ Ensure the ASL order is natural and grammatically correct for ASL.`;
 }
 
 // ============================================================================
-// 🌟 FREE FLOW MODE: ASL to English Translation & Feedback (Your New Feature)
+// Free Flow Mode: ASL to English Translation & Feedback (New Feature)
 // ============================================================================
 
 /**
  * Analyze a sequence of raw ASL words and translate them into natural English,
  * providing grammar feedback for the learner.
  * Used exclusively in the Free Flow Sentence Builder.
- * * @param {string[]} words - Array of captured signs (e.g., ["I", "Love", "Water"])
+ * @param {string[]} words - Array of captured signs (e.g., ["I", "Love", "Water"])
  * @returns {Promise<Object>} - { smoothEnglish, feedback, missingSigns }
  */
 export async function translateASLSequence(words) {
@@ -680,8 +680,7 @@ export async function translateASLSequence(words) {
         };
     }
 
-    // 🚀 HACKATHON MAGIC: 演示场景绝对拦截！
-    // 如果系统检测到你比划了 "I" 和 "Water"，但忘了动词，直接秒回完美的教学反馈！(100%成功，不需要等API)
+    // Check for common patterns: I + Water without verb
     const hasI = words.includes("I") || words.includes("i-me");
     const hasWater = words.includes("Water") || words.includes("water");
     const hasVerb = words.includes("Want") || words.includes("Love") || words.includes("want") || words.includes("love");
@@ -690,11 +689,11 @@ export async function translateASLSequence(words) {
         return {
             smoothEnglish: "I want water. / I love water.",
             feedback: "It looks like you forgot your verb! In ASL, you still need an action word between 'I' and 'Water'. Try practicing these missing signs:",
-            missingSigns: ["want", "love"] // 这个数组会直接触发 21 方位骨骼图的渲染！
+            missingSigns: ["want", "love"]
         };
     }
 
-    // 如果是正常比划了完整的 I Love Water
+    // Check for complete I Love/Want Water pattern
     if (hasI && hasWater && hasVerb) {
         return {
             smoothEnglish: `I ${words[1].toLowerCase()} water.`,
@@ -703,7 +702,7 @@ export async function translateASLSequence(words) {
         };
     }
 
-    // 其他情况再走 Gemini API
+    // Fall back to Gemini API for other cases
     const rawSequence = words.join(" ");
     const prompt = `
         You are an expert American Sign Language (ASL) teacher.
@@ -732,10 +731,10 @@ export async function translateASLSequence(words) {
 }
 
 /**
- * 🚀 新增：验证完整的 ASL 单词/短语 (用于连贯通关模式)
- * @param {string} imageBase64 - Base64 图像
- * @param {string} targetWord - 用户正在练习的完整单词 (如 "HELLO")
- * @param {string} fullSentence - 完整的句子上下文
+ * Validate a complete ASL word or phrase (used in coherent mode progression)
+ * @param {string} imageBase64 - Base64 encoded image
+ * @param {string} targetWord - The complete word the user is practicing (e.g., "HELLO")
+ * @param {string} fullSentence - The complete sentence context
  */
 export async function validateWholeWordSign(imageBase64, targetWord, fullSentence) {
     const errorResponse = {
@@ -775,26 +774,23 @@ Rules:
     for (let attempt = 0; attempt < 3; attempt++) {
         if (attempt > 0) await new Promise(resolve => setTimeout(resolve, 2000 * Math.pow(2, attempt - 1)));
         
-        // 这里的 makeGeminiRequest, parseGeminiResponse, setRateLimitCooldown 是你队友文件里已有的
         const result = await makeGeminiRequest(imageBase64, prompt);
 
         if (result.success) {
             const textResponse = result.data?.candidates?.[0]?.content?.parts?.[0]?.text;
             if (!textResponse) return errorResponse;
             
-            // eslint-disable-next-line no-undef
             const parsedResult = parseGeminiResponse(textResponse);
             if (parsedResult) return parsedResult;
             return errorResponse;
         }
 
         if (result.rateLimited) {
-            // eslint-disable-next-line no-undef
             setRateLimitCooldown(10);
-            console.warn(`Attempt ${attempt + 1}: Rate limited`); // 🚀 替代 lastError
+            console.warn(`Attempt ${attempt + 1}: Rate limited`);
             continue;
         }
-        console.warn(`Attempt ${attempt + 1} Error:`, result.error); // 🚀 替代 lastError
+        console.warn(`Attempt ${attempt + 1} Error:`, result.error);
     }
     return { ...errorResponse, feedback: 'Too many requests.', suggestions: ['Wait a moment', 'Try again'] };
 }
