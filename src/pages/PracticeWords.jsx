@@ -469,6 +469,7 @@ const PracticeWords = () => {
                             videoUrl={word.videoUrl}
                             poster={word.thumbnailUrl}
                             loop={true}
+                            autoplay={true}
                             className="mb-4"
                         />
                         <p className="text-dark-300 text-sm">{word.description}</p>

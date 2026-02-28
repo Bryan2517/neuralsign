@@ -70,61 +70,74 @@ PlaceholderModel.displayName = 'PlaceholderModel';
  * Loads and displays GLTF model from path
  * Uses useGLTF which automatically suspends during loading
  */
-const GLTFModel = memo(({ modelPath, scale = 1, onLoad }) => {
-    // useGLTF suspends while loading (handled by Suspense in parent)
-    // Enable draco decoder from CDN for compressed models
-    const { scene } = useGLTF(modelPath, true);
-    // Clone the scene to avoid mutating the cached object
-    // usage of useMemo ensures we only clone when the scene or path changes
-    const clonedScene = React.useMemo(() => scene.clone(true), [scene]);
+const GLTFModel = memo(({ modelPath, scale = 1, onLoad, onError }) => {
+    // Attempt to load the model, but catch errors to prevent Suspense from locking
+    try {
+        const { scene } = useGLTF(modelPath, true);
 
-    const modelRef = useRef();
-    const hasCalledOnLoad = useRef(false);
+        // Safety check - sometimes scene takes a moment to be available even with Suspense
+        if (!scene) return null;
 
-    // Apply materials and shadows, and normalize scale on load
-    useEffect(() => {
-        if (clonedScene && !hasCalledOnLoad.current) {
-            hasCalledOnLoad.current = true;
+        // Calculate unified scale based on exact bounding box size to prevent varying model sizes
+        const normalizeScale = React.useMemo(() => {
+            if (!scene) return 1;
 
-            // Calculate bounding box to normalize model size
-            const box = new THREE.Box3().setFromObject(clonedScene);
+            const box = new THREE.Box3().setFromObject(scene);
             const size = box.getSize(new THREE.Vector3());
             const maxDim = Math.max(size.x, size.y, size.z);
 
-            // Normalize to fit in a 2x2x2 box
-            const normalizeScale = maxDim > 0 ? 2 / maxDim : 1;
-            clonedScene.scale.setScalar(normalizeScale * scale);
+            // Return scaling factor to normalize the largest dimension to 2
+            return maxDim > 0 ? 2 / maxDim : 1;
+        }, [scene]);
 
-            // Center the model
-            const center = box.getCenter(new THREE.Vector3());
-            clonedScene.position.sub(center.multiplyScalar(normalizeScale * scale));
+        // Use a ref to track the last initialized model path to ensure onLoad fires correctly on model switch
+        const lastInitializedPath = useRef(null);
 
-            // Apply materials and shadows to all meshes
-            clonedScene.traverse((child) => {
-                if (child.isMesh) {
-                    child.castShadow = true;
-                    child.receiveShadow = true;
-                    if (child.material) {
-                        child.material.roughness = 0.5;
-                        child.material.metalness = 0.2;
+        useEffect(() => {
+            // If the scene exists and we haven't initialized THIS specific path yet
+            if (scene && lastInitializedPath.current !== modelPath) {
+                lastInitializedPath.current = modelPath;
+
+                // Apply materials and shadows to all meshes directly
+                scene.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                        if (child.material) {
+                            child.material.roughness = 0.5;
+                            child.material.metalness = 0.2;
+                        }
                     }
-                }
-            });
+                });
 
-            console.log('✅ Model loaded and normalized:', modelPath, 'scale:', normalizeScale);
-            onLoad?.();
+                console.log('✅ Model prepared via primitive:', modelPath, 'scale:', scale * normalizeScale);
+                onLoad?.();
+            }
+        }, [scene, scale, normalizeScale, modelPath, onLoad]);
+
+        return (
+            <Center>
+                <group scale={scale * normalizeScale} rotation={[0, -Math.PI / 2, 0]}>
+                    <primitive object={scene} />
+                </group>
+            </Center>
+        );
+    } catch (error) {
+        // Suspense throws promises to indicate loading state. We MUST re-throw them!
+        if (error instanceof Promise) {
+            throw error;
         }
-    }, [clonedScene, scale, modelPath, onLoad]);
 
-    if (!clonedScene) {
+        // If the useGLTF hook natively throws (e.g. file not found), catch it and relay it upwards
+        console.error('Failed to load GLTF model natively:', error);
+
+        // Push the error state out of the React render cycle
+        useEffect(() => {
+            onError?.(error);
+        }, [onError, error]);
+
         return null;
     }
-
-    return (
-        <group ref={modelRef}>
-            <primitive object={clonedScene} />
-        </group>
-    );
 });
 
 GLTFModel.displayName = 'GLTFModel';
@@ -272,6 +285,7 @@ const ModelContent = memo(({
                 dampingFactor={0.05}
                 autoRotate={autoRotate}
                 autoRotateSpeed={2}
+                makeDefault
             />
         </>
     );
@@ -306,19 +320,20 @@ const HandModel3D = memo(({
     className = '',
 }) => {
     return (
-        <div className={`w-full h-full ${className}`}>
+        <div className={`w-full h-full ${className}`} >
             <Canvas
+                shadows
                 camera={{
                     position: [0, 0, 5],
                     fov: 50,
                     near: 0.1,
                     far: 1000,
                 }}
-                shadows
                 gl={{
                     antialias: true,
                     alpha: true,
                     powerPreference: 'high-performance',
+                    preserveDrawingBuffer: true
                 }}
                 dpr={[1, 2]}
             >
@@ -333,7 +348,7 @@ const HandModel3D = memo(({
                     controlsRef={controlsRef}
                 />
             </Canvas>
-        </div>
+        </div >
     );
 });
 

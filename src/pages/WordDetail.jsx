@@ -133,6 +133,7 @@ const WordDetail = () => {
                             videoUrl={word.videoUrl}
                             poster={word.thumbnailUrl}
                             loop={true}
+                            autoplay={true}
                             className="mb-4"
                         />
                     </motion.div>
@@ -214,8 +215,8 @@ const WordDetail = () => {
                                     <Star
                                         key={i}
                                         className={`w-4 h-4 ${i < word.difficulty
-                                                ? 'text-warning fill-warning'
-                                                : 'text-dark-600'
+                                            ? 'text-warning fill-warning'
+                                            : 'text-dark-600'
                                             }`}
                                     />
                                 ))}

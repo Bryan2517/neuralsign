@@ -215,10 +215,10 @@ const WordPractice = ({
                         <div
                             key={`letter-${index}`}
                             className={`w-8 h-8 flex items-center justify-center rounded-lg font-bold transition-all ${index === currentLetter
-                                    ? 'bg-primary text-white scale-110'
-                                    : index < currentLetter
-                                        ? 'bg-success/20 text-success'
-                                        : 'bg-dark-600 text-dark-400'
+                                ? 'bg-primary text-white scale-110'
+                                : index < currentLetter
+                                    ? 'bg-success/20 text-success'
+                                    : 'bg-dark-600 text-dark-400'
                                 }`}
                         >
                             {letter}
@@ -231,18 +231,15 @@ const WordPractice = ({
             <div className="grid md:grid-cols-2 gap-6">
                 {/* Reference Model */}
                 <div className="relative h-64 rounded-xl overflow-hidden bg-dark-700/50">
-                    <div className="absolute top-3 left-3 z-10 px-3 py-1 rounded-lg bg-dark-800/90">
-                        <span className="text-sm text-dark-300">Reference</span>
-                    </div>
                     <Suspense fallback={
                         <div className="w-full h-full flex items-center justify-center">
                             <Loader2 className="w-8 h-8 text-primary animate-spin" />
                         </div>
                     }>
-                        <HandModel3D
+                        <ModelViewer
                             letter={currentLetterChar}
-                            modelPath={`/models/alphabet/letter_${currentLetterChar}.glb`}
-                            autoRotate={true}
+                            showControls={false}
+                            className="h-full border-none rounded-none"
                         />
                     </Suspense>
                 </div>
@@ -282,8 +279,8 @@ const WordPractice = ({
                                         animate={{ opacity: 1 }}
                                         exit={{ opacity: 0 }}
                                         className={`absolute inset-0 flex items-center justify-center ${validationResult.isCorrect
-                                                ? 'bg-success/20'
-                                                : 'bg-error/20'
+                                            ? 'bg-success/20'
+                                            : 'bg-error/20'
                                             }`}
                                     >
                                         {validationResult.isCorrect ? (
@@ -307,8 +304,8 @@ const WordPractice = ({
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                         className={`mt-6 p-4 rounded-xl ${validationResult.isCorrect
-                                ? 'bg-success/10 border border-success/30'
-                                : 'bg-error/10 border border-error/30'
+                            ? 'bg-success/10 border border-success/30'
+                            : 'bg-error/10 border border-error/30'
                             }`}
                     >
                         <div className="flex items-start gap-3">

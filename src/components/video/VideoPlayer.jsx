@@ -19,7 +19,8 @@ const VideoPlayer = ({
     onPause = null,
     onEnd = null,
     poster = null,
-    playbackRate = 1.0
+    playbackRate = 1.0,
+    onError = null
 }) => {
     const videoRef = useRef(null);
     const progressRef = useRef(null);
@@ -37,7 +38,7 @@ const VideoPlayer = ({
         setShowOverlay(true);
         if (hideOverlayTimeout.current) clearTimeout(hideOverlayTimeout.current);
         if (isPlaying) {
-            hideOverlayTimeout.current = setTimeout(() => setShowOverlay(false), 3000);
+            hideOverlayTimeout.current = setTimeout(() => setShowOverlay(false), 1500);
         }
     }, [isPlaying]);
 
@@ -46,6 +47,13 @@ const VideoPlayer = ({
             if (hideOverlayTimeout.current) clearTimeout(hideOverlayTimeout.current);
         };
     }, []);
+
+    // Set initial timer when autoplay starts
+    useEffect(() => {
+        if (isPlaying) {
+            resetOverlayTimer();
+        }
+    }, [isPlaying, resetOverlayTimer]);
 
     useEffect(() => {
         if (videoRef.current) {
@@ -147,6 +155,9 @@ const VideoPlayer = ({
             className={`relative aspect-video bg-dark-900 rounded-xl overflow-hidden group ${className}`}
             onMouseMove={resetOverlayTimer}
             onMouseEnter={() => setShowOverlay(true)}
+            onMouseLeave={() => {
+                if (isPlaying) setShowOverlay(false);
+            }}
         >
             {/* Video Element */}
             <video
@@ -162,7 +173,8 @@ const VideoPlayer = ({
                 onEnded={handleEnded}
                 onCanPlay={() => setIsLoading(false)}
                 onWaiting={() => setIsLoading(true)}
-                className="w-full h-full object-contain cursor-pointer"
+                onError={onError}
+                className={`w-full h-full cursor-pointer bg-transparent ${className.includes('object-cover') ? 'object-cover' : 'object-contain'}`}
                 onClick={togglePlay}
             />
 

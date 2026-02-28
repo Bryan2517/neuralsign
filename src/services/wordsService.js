@@ -26,6 +26,22 @@ class WordsService {
     }
 
     /**
+     * Helper to populate default values for missing fields
+     * @param {Object} word - The word object
+     * @returns {Object|null} The word object with defaults
+     */
+    _populateDefaults(word) {
+        if (!word) return null;
+        const populated = { ...word };
+        // If no video URL is provided, try to construct one based on English text
+        if (!populated.videoUrl && populated.englishText) {
+            const safeName = populated.englishText.replace(/ /g, '_');
+            populated.videoUrl = `/videos/word/word_${safeName}.mp4`;
+        }
+        return populated;
+    }
+
+    /**
      * Check if cache is still valid
      */
     _isCacheValid() {
@@ -53,7 +69,7 @@ class WordsService {
         try {
             if (!db) {
                 console.warn('⚠️ Firestore not available, using seed data');
-                return seedWords;
+                return seedWords.map(w => this._populateDefaults(w));
             }
 
             const signsRef = collection(db, 'signs');
@@ -62,18 +78,18 @@ class WordsService {
 
             if (snapshot.empty) {
                 console.log('📦 No words in Firestore, using seed data');
-                this._wordsCache = seedWords;
+                this._wordsCache = seedWords.map(w => this._populateDefaults(w));
                 this._cacheTimestamp = Date.now();
-                return seedWords;
+                return this._wordsCache;
             }
 
             const words = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            this._wordsCache = words;
+            this._wordsCache = words.map(w => this._populateDefaults(w));
             this._cacheTimestamp = Date.now();
-            return words;
+            return this._wordsCache;
         } catch (error) {
             console.error('❌ Error fetching words:', error);
-            return seedWords;
+            return seedWords.map(w => this._populateDefaults(w));
         }
     }
 
@@ -101,21 +117,25 @@ class WordsService {
 
         try {
             if (!db) {
-                return seedWords.find(w => w.id === wordId) || null;
+                const word = seedWords.find(w => w.id === wordId) || null;
+                return this._populateDefaults(word);
             }
 
             const docRef = doc(db, 'signs', wordId);
             const docSnap = await getDoc(docRef);
 
             if (docSnap.exists()) {
-                return { id: docSnap.id, ...docSnap.data() };
+                const word = { id: docSnap.id, ...docSnap.data() };
+                return this._populateDefaults(word);
             }
 
             // Fallback to seed data
-            return seedWords.find(w => w.id === wordId) || null;
+            const word = seedWords.find(w => w.id === wordId) || null;
+            return this._populateDefaults(word);
         } catch (error) {
             console.error('❌ Error fetching word:', error);
-            return seedWords.find(w => w.id === wordId) || null;
+            const word = seedWords.find(w => w.id === wordId) || null;
+            return this._populateDefaults(word);
         }
     }
 

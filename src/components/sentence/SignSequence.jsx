@@ -140,10 +140,10 @@ const SignSequence = ({ words = [], onWordSelect, currentWordIndex = 0 }) => {
                         key={`word-${index}`}
                         onClick={() => handleWordClick(index)}
                         className={`group relative px-3 py-1 rounded-lg transition-all ${index === currentWord
-                                ? 'bg-primary text-white'
-                                : index < currentWord
-                                    ? 'bg-success/20 text-success'
-                                    : 'bg-dark-600 text-dark-400 hover:bg-dark-500'
+                            ? 'bg-primary text-white'
+                            : index < currentWord
+                                ? 'bg-success/20 text-success'
+                                : 'bg-dark-600 text-dark-400 hover:bg-dark-500'
                             }`}
                     >
                         <span className="text-sm font-medium">{word}</span>
@@ -173,10 +173,10 @@ const SignSequence = ({ words = [], onWordSelect, currentWordIndex = 0 }) => {
                         <div
                             key={`letter-${index}`}
                             className={`w-8 h-8 flex items-center justify-center rounded-lg font-bold transition-all ${index === currentLetter
-                                    ? 'bg-primary text-white scale-125'
-                                    : index < currentLetter
-                                        ? 'bg-primary/30 text-primary'
-                                        : 'bg-dark-600 text-dark-400'
+                                ? 'bg-primary text-white scale-125'
+                                : index < currentLetter
+                                    ? 'bg-primary/30 text-primary'
+                                    : 'bg-dark-600 text-dark-400'
                                 }`}
                         >
                             {letter}
@@ -201,19 +201,14 @@ const SignSequence = ({ words = [], onWordSelect, currentWordIndex = 0 }) => {
                             transition={{ duration: 0.2 }}
                             className="w-full h-full"
                         >
-                            <HandModel3D
+                            <ModelViewer
                                 letter={currentLetterChar}
-                                modelPath={`/models/alphabet/letter_${currentLetterChar}.glb`}
-                                autoRotate={true}
+                                showControls={false}
+                                className="h-full border-none rounded-none"
                             />
                         </motion.div>
                     </AnimatePresence>
                 </Suspense>
-
-                {/* Current Letter Badge */}
-                <div className="absolute top-4 left-4 px-4 py-2 rounded-xl bg-dark-800/90 backdrop-blur-sm">
-                    <span className="text-3xl font-bold text-primary">{currentLetterChar}</span>
-                </div>
 
                 {/* Letter count */}
                 <div className="absolute top-4 right-4 px-3 py-1 rounded-lg bg-dark-800/90 backdrop-blur-sm">
@@ -273,8 +268,8 @@ const SignSequence = ({ words = [], onWordSelect, currentWordIndex = 0 }) => {
                 <button
                     onClick={() => setLoopEnabled(!loopEnabled)}
                     className={`p-2 rounded-lg transition-colors ${loopEnabled
-                            ? 'bg-primary/20 text-primary'
-                            : 'bg-dark-600 text-dark-300 hover:bg-dark-500'
+                        ? 'bg-primary/20 text-primary'
+                        : 'bg-dark-600 text-dark-300 hover:bg-dark-500'
                         }`}
                     title={loopEnabled ? 'Loop on' : 'Loop off'}
                 >
@@ -290,8 +285,8 @@ const SignSequence = ({ words = [], onWordSelect, currentWordIndex = 0 }) => {
                         key={key}
                         onClick={() => setSpeed(key)}
                         className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${speed === key
-                                ? 'bg-primary/20 text-primary'
-                                : 'bg-dark-600 text-dark-400 hover:bg-dark-500'
+                            ? 'bg-primary/20 text-primary'
+                            : 'bg-dark-600 text-dark-400 hover:bg-dark-500'
                             }`}
                     >
                         {label}

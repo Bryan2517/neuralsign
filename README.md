@@ -92,7 +92,30 @@ This project was built for **KitaHack 2026**, a hackathon focused on creating im
 
 ---
 
-## 📁 Project Structure
+## � User Guide
+
+Welcome to NeuralSign! Here's how you can make the most out of your sign language learning journey:
+
+### 1. Learning New Signs
+- **Explore Lessons:** Navigate to the **Learn** section to select a topic.
+- **Interactive 3D Models:** Use the 3D hand models to view signs from any angle—rotate and zoom to understand the exact hand shape.
+- **Video Demonstrations:** Switch to the video tab (where available) to see continuous, real-life examples of how signs are performed in motion.
+
+### 2. Practice & Real-Time Validation
+- **Webcam Tracking:** Head over to the **Practice** area and allow webcam access. All video processing happens locally on your device for complete privacy.
+- **Real-Time Feedback:** Perform the signs you've learned. The AI engine will map your hand landmarks in real-time and validate if your gesture matches the target sign.
+
+### 3. Sentence Builder & AI Tutor
+- **Combine Signs:** Use the Sentence Builder to practice chaining multiple signs together.
+- **Ask Gemini:** Engage with the conversational AI tutor for personalized guidance, technique corrections, and natural language feedback.
+
+### 4. Track Your Progress
+- **Gamified Learning:** Earn Experience Points (XP) for completing lessons and successful practice sessions.
+- **Streaks & Achievements:** Maintain your daily learning streak and unlock achievements as you expand your sign language vocabulary.
+
+---
+
+## �📁 Project Structure
 
 ```
 neuralsign/
