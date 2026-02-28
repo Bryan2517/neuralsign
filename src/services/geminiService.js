@@ -661,7 +661,7 @@ Ensure the ASL order is natural and grammatically correct for ASL.`;
 }
 
 // ============================================================================
-// Free Flow Mode: ASL to English Translation & Feedback (New Feature)
+// Free Flow Mode: ASL to English Translation & Feedback
 // ============================================================================
 
 /**
@@ -680,7 +680,7 @@ export async function translateASLSequence(words) {
         };
     }
 
-    // Check for common patterns: I + Water without verb
+    // Retain the original hardcoded tutorial logic for the specific "I Water" case
     const hasI = words.includes("I") || words.includes("i-me");
     const hasWater = words.includes("Water") || words.includes("water");
     const hasVerb = words.includes("Want") || words.includes("Love") || words.includes("want") || words.includes("love");
@@ -701,34 +701,64 @@ export async function translateASLSequence(words) {
         };
     }
 
-    // Fall back to Gemini API for other cases
     const rawSequence = words.join(" ");
-    const prompt = `
-        You are an expert American Sign Language (ASL) teacher.
-        A student signed: [${rawSequence}]
-
-        Analyze this and provide a JSON response:
-        1. "smoothEnglish": The natural English translation.
-        2. "feedback": Brief, encouraging grammar feedback. Tell them ASL needs the verb!
-        3. "missingSigns": An array of lowercase strings representing verbs they probably missed. Leave empty if complete.
-
-        Return ONLY valid JSON.
-        { "smoothEnglish": "...", "feedback": "...", "missingSigns": [] }
-    `;
+    const prompt = `Translate this ASL sequence into natural English: [${rawSequence}]. Provide encouraging grammar feedback. Format as JSON with keys: smoothEnglish, feedback, missingSigns (array).`;
 
     try {
-        const genAI = getGeminiInstance();
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-        const result = await model.generateContent({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3 }});
-        const text = result.response.text();
-        const cleanedText = text.replace(/```(?:json)?\s*([\s\S]*?)```/g, '$1').trim();
-        return JSON.parse(cleanedText);
+        console.log(`📝 Translating ASL sequence: "${rawSequence}"`);
+        
+        // Using the reliable fetch method that analyzeSentenceToSigns uses
+        const response = await fetch(`${GEMINI_TEXT_URL}?key=${GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{ text: prompt }]
+                }],
+                generationConfig: {
+                    temperature: 0.2,
+                    // 🚀 THIS FORCES GOOGLE TO ONLY RETURN PURE JSON
+                    responseMimeType: "application/json", 
+                }
+            })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`API Status ${response.status}: ${errorText}`);
+        }
+
+        const data = await response.json();
+        const textResponse = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!textResponse) {
+            throw new Error("API returned empty text.");
+        }
+
+        console.log("📝 Raw Gemini Translation Response:", textResponse);
+
+        // Because we used responseMimeType, we can safely parse it directly
+        const parsedResult = JSON.parse(textResponse);
+
+        return {
+            smoothEnglish: parsedResult.smoothEnglish || rawSequence,
+            feedback: parsedResult.feedback || "Translation complete.",
+            missingSigns: Array.isArray(parsedResult.missingSigns) ? parsedResult.missingSigns : []
+        };
+
     } catch (error) {
-        console.error("Error translating ASL sequence:", error);
-        return { smoothEnglish: words.join(" "), feedback: "API connection failed.", missingSigns: [] };
+        console.error("❌ Error translating ASL sequence:", error);
+        
+        // 🚀 THIS WILL SHOW THE EXACT ERROR ON YOUR SCREEN IF IT FAILS!
+        return { 
+            smoothEnglish: words.join(" "), 
+            feedback: `System Error: ${error.message}`, 
+            missingSigns: [] 
+        };
     }
 }
-
 /**
  * Validate a complete ASL word or phrase (used in coherent mode progression)
  * @param {string} imageBase64 - Base64 encoded image

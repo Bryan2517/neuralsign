@@ -42,7 +42,9 @@ const ACTIVE_VOCABULARY = [
     { id: 'water', englishText: 'Water', isStatic: true },
     { id: 'you', englishText: 'You', isStatic: true },
     { id: 'yes', englishText: 'Yes', isStatic: true },
-    { id: 'no', englishText: 'No', isStatic: true }
+    { id: 'no', englishText: 'No', isStatic: true },
+    { id: 'what', englishText: 'What', isStatic: false }, 
+    { id: 'time', englishText: 'Time', isStatic: false },
 ];
 
 // ============================================================================
