@@ -693,7 +693,6 @@ export async function translateASLSequence(words) {
         };
     }
 
-    // Check for complete I Love/Want Water pattern
     if (hasI && hasWater && hasVerb) {
         return {
             smoothEnglish: `I ${words[1].toLowerCase()} water.`,
