@@ -212,7 +212,7 @@ const WordPractice = ({
                     </div>
                 </div>
 
-                {/* Right-side 3D reference panel */}
+                {/* Right-side 3D reference panel WITH BUTTONS */}
                 <div className="lg:col-span-1 flex flex-col gap-4">
                     <div className="glass-card flex-1 flex flex-col border border-dark-600 rounded-2xl bg-dark-800/80 overflow-hidden shadow-xl">
                         <div className="p-4 border-b border-dark-700 bg-dark-900/40">
@@ -227,14 +227,10 @@ const WordPractice = ({
                                 <ModelViewer
                                     letter={targetSignDisplay}
                                     showControls={false}
+                                    hideBadge={true} // 🚀 Tells ModelViewer to hide its internal target badge
                                     className="w-full h-full border-none rounded-none bg-transparent shadow-none"
                                 />
                             </Suspense>
-                            
-                            {/* Current target badge */}
-                            <div className="absolute top-4 left-4 px-3 py-1.5 rounded-lg bg-primary/20 border border-primary/30 backdrop-blur-md">
-                                <span className="text-primary font-bold text-lg uppercase">{targetSignDisplay}</span>
-                            </div>
                         </div>
 
                         <div className="p-5 bg-dark-900/60 border-t border-dark-700">

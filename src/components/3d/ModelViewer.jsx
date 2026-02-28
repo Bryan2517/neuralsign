@@ -29,8 +29,10 @@ const ModelViewer = memo(({
     letter = 'A',
     onModelLoad,
     showControls = true,
+    hideBadge = false, 
+    onViewModeChange, // 🚀 ADD THIS PROP
     className = '',
-    height = '100%' // Allow overriding height
+    height = '100%'
 }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [hasError, setHasError] = useState(false);
@@ -41,16 +43,13 @@ const ModelViewer = memo(({
     const controlsRef = useRef(null);
     const videoRef = useRef(null);
 
-    // 🤝 Merged: Your placeholder check combined with teammate's new words
     const letterStr = String(letter).toUpperCase();
     
-    // Add all your new words and teammate's new words here!
-    const REAL_MODELS = ['A', 'E', 'I', 'F', 'L', 'LOVE', 'WANT', 'WATER', 'WHAT', 'TIME', 'THANK-YOU', 'PLEASE', ];
+    const REAL_MODELS = ['A', 'E', 'I', 'F', 'L', 'LOVE', 'WANT', 'WATER', 'WHAT', 'TIME', 'THANK-YOU', 'PLEASE'];
     const hasRealModel = REAL_MODELS.includes(letterStr);
 
-    // 🤝 Merged: Smart pathing. Automatically switches between /words/ and /alphabet/ based on length
     const modelPath = useMemo(() => {
-        if (!hasRealModel) return null; // Triggers your purple box
+        if (!hasRealModel) return null; 
         return letterStr.length > 1 
             ? `/models/words/word_${letterStr.toLowerCase()}.glb` 
             : `/models/alphabet/letter_${letterStr}.glb`;
@@ -108,7 +107,6 @@ const ModelViewer = memo(({
         }
     }, []);
 
-    // 🤝 Merged: Your custom loading timeouts perfectly combined with teammate's video reset
     useEffect(() => {
         const initTimer = setTimeout(() => {
             setIsLoading(true);
@@ -117,20 +115,18 @@ const ModelViewer = memo(({
         }, 0);
 
         let fallbackTimer;
-        // For placeholder models, close loading animation after 500ms
         if (!hasRealModel) {
             fallbackTimer = setTimeout(() => {
                 setIsLoading(false);
             }, 500);
         } else {
-            // For real models, keep original 1500ms timeout
             fallbackTimer = setTimeout(() => {
                 setIsLoading(false);
             }, 1500);
         }
 
         if (videoRef.current) {
-            videoRef.current.load(); // Reload video when letter changes
+            videoRef.current.load();
         }
 
         return () => {
@@ -153,10 +149,13 @@ const ModelViewer = memo(({
                 ${className}
             `}
         >
-            {/* 🤝 Merged: Teammate's View Mode Tabs */}
+            {/* View Mode Tabs */}
             <div className="flex border-b border-dark-700 w-full overflow-hidden shrink-0 bg-dark-800 rounded-t-2xl z-20">
                 <button
-                    onClick={() => setViewMode('3d')}
+                    onClick={() => {
+                        setViewMode('3d');
+                        if (onViewModeChange) onViewModeChange('3d'); // 🚀 ADD THIS
+                    }}
                     className={`flex-1 py-3 px-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${viewMode === '3d'
                         ? 'bg-dark-700/50 text-white border-b-2 border-primary'
                         : 'text-dark-400 hover:text-dark-200 hover:bg-dark-700/30 border-b-2 border-transparent'
@@ -166,7 +165,10 @@ const ModelViewer = memo(({
                     3D Model
                 </button>
                 <button
-                    onClick={() => setViewMode('video')}
+                    onClick={() => {
+                        setViewMode('video');
+                        if (onViewModeChange) onViewModeChange('video'); // 🚀 ADD THIS
+                    }}
                     className={`flex-1 py-3 px-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${viewMode === 'video'
                         ? 'bg-dark-700/50 text-white border-b-2 border-primary'
                         : 'text-dark-400 hover:text-dark-200 hover:bg-dark-700/30 border-b-2 border-transparent'
@@ -177,9 +179,9 @@ const ModelViewer = memo(({
                 </button>
             </div>
 
-            {/* 🤝 Merged: Teammate's Letter Badge */}
             <AnimatePresence>
-                {viewMode === '3d' && (
+                {/* 🚀 FIXED: Now only shows the badge if hideBadge is false! */}
+                {viewMode === '3d' && !hideBadge && (
                     <motion.div
                         initial={{ opacity: 0, scale: 0 }}
                         animate={{ opacity: 1, scale: 1 }}
@@ -212,7 +214,6 @@ const ModelViewer = memo(({
                             transition={{ duration: 0.2 }}
                             className="absolute inset-0 w-full h-full"
                         >
-                            {/* 🤝 Merged: Your Robust Loading & Error States */}
                             <AnimatePresence mode="wait">
                                 {hasError ? (
                                     <motion.div
@@ -237,7 +238,6 @@ const ModelViewer = memo(({
                                 ) : null}
                             </AnimatePresence>
 
-                            {/* Persistently mounted canvas to prevent WebGL Context Loss */}
                             <motion.div
                                 className="w-full h-full absolute inset-0 z-10 transition-opacity duration-300"
                                 style={{ opacity: hasError ? 0 : 1, pointerEvents: hasError || isLoading ? 'none' : 'auto' }}
@@ -254,7 +254,6 @@ const ModelViewer = memo(({
                                 </Suspense>
                             </motion.div>
 
-                            {/* 🤝 Merged: Controls Toolbar */}
                             <AnimatePresence>
                                 {showControls && !isLoading && !hasError && (
                                     <motion.div
@@ -274,7 +273,6 @@ const ModelViewer = memo(({
                                 )}
                             </AnimatePresence>
 
-                            {/* Interaction hint */}
                             <AnimatePresence>
                                 {!isLoading && !hasError && (
                                     <motion.div
@@ -290,7 +288,6 @@ const ModelViewer = memo(({
                             </AnimatePresence>
                         </motion.div>
                     ) : (
-                        /* 🤝 Merged: Teammate's Video Player logic */
                         <motion.div
                             key="video-viewer"
                             initial={{ opacity: 0 }}
