@@ -24,12 +24,11 @@ const ModelViewer = memo(({
     const [autoRotate, setAutoRotate] = useState(false);
     const controlsRef = useRef(null);
 
-    // 🚀 核心修改 1：判断是否有真实模型 (只有 A 和 E)
+    // Determine if a real model exists for this letter (only A and E have real models)
     const firstChar = letter ? String(letter).charAt(0).toUpperCase() : 'A';
     const hasRealModel = ['A', 'E'].includes(firstChar);
 
-    // 🚀 核心修改 2：如果没有真实模型，强制传入 null。
-    // 这将完美触发队友写好的 `PlaceholderModel` (紫色正方块)！
+    // If no real model exists, pass null to trigger the PlaceholderModel (purple cube)
     const modelPath = hasRealModel ? `/models/alphabet/letter_${firstChar}.glb` : null;
 
     const handleLoad = useCallback(() => {
@@ -76,7 +75,7 @@ const ModelViewer = memo(({
         }
     }, []);
 
-    // 🚀 核心修改 3：完美修复 React 严格模式报错，并自动处理紫色方块的 Loading
+    // Fix React strict mode warning and auto-handle loading state for placeholder models
     useEffect(() => {
         const initTimer = setTimeout(() => {
             setIsLoading(true);
@@ -84,13 +83,13 @@ const ModelViewer = memo(({
         }, 0);
 
         let fallbackTimer;
-        // 如果渲染的是紫色正方块，0.5秒后自动关闭 Loading 动画
+        // For placeholder models, close loading animation after 500ms
         if (!hasRealModel) {
             fallbackTimer = setTimeout(() => {
                 setIsLoading(false);
             }, 500);
         } else {
-            // 如果是真实模型，保留原始兜底加载时间
+            // For real models, keep original timeout
             fallbackTimer = setTimeout(() => {
                 setIsLoading(false);
             }, 1500);
@@ -115,24 +114,8 @@ const ModelViewer = memo(({
                 ${className}
             `}
         >
-            {/* 🚀 核心修改 4：自适应单词长度的 Badge，不再局限于 w-12 */}
-            <div className="absolute top-4 left-4 z-10">
-                <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 300, delay: 0.2 }}
-                    className="
-                        min-w-[3rem] px-4 h-12 rounded-xl
-                        bg-gradient-to-br from-primary to-secondary
-                        flex items-center justify-center
-                        text-lg font-bold text-white capitalize
-                        shadow-lg shadow-primary/30
-                    "
-                >
-                    {letter}
-                </motion.div>
-            </div>
-
+            {/* Badge showing 3D preview indicator */}
+            
             <div className="absolute top-4 right-4 z-10">
                 <motion.div
                     initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}
@@ -142,7 +125,7 @@ const ModelViewer = memo(({
                 </motion.div>
             </div>
 
-            {/* 🚀 核心修改 5：移除了写死的高度 (min-h-[500px])，改成 flex-1 自适应 */}
+            {/* Responsive container with flex layout instead of fixed height */}
             <div className="w-full flex-1 relative min-h-[250px]">
                 <div className="absolute inset-0 w-full h-full">
                     <AnimatePresence mode="wait">
