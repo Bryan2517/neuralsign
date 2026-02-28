@@ -139,8 +139,8 @@ This project was built for **KitaHack 2026**, a hackathon focused on creating im
 
 ### SDG Alignment
 
-**SDG 10: Reduced Inequalities** - NeuralSign directly enables greater participation in everyday society by breaking down communication barriers for the deaf and hard-of-hearing community.
-**SDG 4: Quality Education** - NeuralSign promotes inclusive and equitable quality education by making sign language learning accessible to everyone, breaking down communication barriers for the deaf and hard-of-hearing community.
+- **SDG 10: Reduced Inequalities** - NeuralSign directly enables greater participation in everyday society by breaking down communication barriers for the deaf and hard-of-hearing community.
+- **SDG 4: Quality Education** - NeuralSign promotes inclusive and equitable quality education by making sign language learning accessible to everyone, breaking down communication barriers for the deaf and hard-of-hearing community.
 
 ---
 
