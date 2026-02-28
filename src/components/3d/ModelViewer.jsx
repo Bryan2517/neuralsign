@@ -1,9 +1,11 @@
 /**
  * ModelViewer Component
  * Main 3D viewer container with controls and state management
+ * Merged: Teammate's Video Tabs + Your Purple Placeholder Logic
  */
 
 import { useState, useRef, useCallback, useEffect, lazy, Suspense, memo, useMemo } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Maximize2,
@@ -23,14 +25,6 @@ import VideoPlayer from '@/components/video/VideoPlayer';
 // Lazy load the 3D component for performance
 const HandModel3D = lazy(() => import('./HandModel3D'));
 
-/**
- * ModelViewer Component
- * 
- * @param {string} letter - Letter to display (A-Z)
- * @param {function} onModelLoad - Callback when model loads
- * @param {boolean} showControls - Show control toolbar (default: true)
- * @param {string} className - Additional CSS classes
- */
 const ModelViewer = memo(({
     letter = 'A',
     onModelLoad,
@@ -43,58 +37,64 @@ const ModelViewer = memo(({
     const [autoRotate, setAutoRotate] = useState(false);
     const [viewMode, setViewMode] = useState('3d'); // '3d' or 'video'
     const [videoError, setVideoError] = useState(false);
+    
     const controlsRef = useRef(null);
     const videoRef = useRef(null);
 
-    // Memoize the model path to prevent unnecessary re-evaluations
-    const modelPath = useMemo(() => `/models/alphabet/letter_${letter}.glb`, [letter]);
+    // 🤝 Merged: Your placeholder check combined with teammate's new words
+    const letterStr = String(letter).toUpperCase();
+    
+    // Add all your new words and teammate's new words here!
+    const REAL_MODELS = ['A', 'E', 'I', 'F', 'L', 'LOVE', 'WANT', 'WATER', 'WHAT', 'TIME', 'THANK-YOU', 'PLEASE', ];
+    const hasRealModel = REAL_MODELS.includes(letterStr);
 
-    // Calculate video path based on letter
-    const videoPath = useMemo(() => `/videos/alphabet/letter_${letter}.mp4`, [letter]);
+    // 🤝 Merged: Smart pathing. Automatically switches between /words/ and /alphabet/ based on length
+    const modelPath = useMemo(() => {
+        if (!hasRealModel) return null; // Triggers your purple box
+        return letterStr.length > 1 
+            ? `/models/words/word_${letterStr.toLowerCase()}.glb` 
+            : `/models/alphabet/letter_${letterStr}.glb`;
+    }, [letterStr, hasRealModel]);
 
-    // Handle model load success
+    const videoPath = useMemo(() => {
+        return letterStr.length > 1 
+            ? `/videos/words/word_${letterStr.toLowerCase()}.mp4` 
+            : `/videos/alphabet/letter_${letterStr}.mp4`;
+    }, [letterStr]);
+
     const handleLoad = useCallback(() => {
-        console.log(`✅ Model fully loaded: ${letter}`);
-        // Defer state updates slightly to prevent layout thrashing that crashes WebGL
+        console.log(`✅ Model fully loaded: ${letterStr}`);
         requestAnimationFrame(() => {
             setIsLoading(false);
             setHasError(false);
-            if (onModelLoad) onModelLoad(letter);
+            if (onModelLoad) onModelLoad(letterStr);
         });
-    }, [letter, onModelLoad]);
+    }, [letterStr, onModelLoad]);
 
-    // Handle model load error
     const handleError = useCallback((error) => {
-        console.error(`⚠️ Model error for ${letter}:`, error);
+        console.error(`⚠️ Model error for ${letterStr}:`, error);
         setIsLoading(false);
         setHasError(true);
-    }, [letter]);
+    }, [letterStr]);
 
-    // Handle retry
     const handleRetry = useCallback(() => {
         setIsLoading(true);
         setHasError(false);
     }, []);
 
-    // Reset view to default camera position
     const handleResetView = useCallback(() => {
-        if (controlsRef.current) {
-            controlsRef.current.reset();
-        }
+        if (controlsRef.current) controlsRef.current.reset();
     }, []);
 
-    // Toggle auto-rotation
     const handleToggleAutoRotate = useCallback(() => {
         setAutoRotate(prev => !prev);
     }, []);
 
-    // Zoom controls - OrbitControls uses camera position, not dollyTo
     const handleZoomIn = useCallback(() => {
         if (controlsRef.current) {
             const camera = controlsRef.current.object;
             const direction = camera.position.clone().normalize();
-            const newDistance = Math.max(camera.position.length() - 1, 2);
-            camera.position.copy(direction.multiplyScalar(newDistance));
+            camera.position.copy(direction.multiplyScalar(Math.max(camera.position.length() - 1, 2)));
             controlsRef.current.update();
         }
     }, []);
@@ -103,21 +103,41 @@ const ModelViewer = memo(({
         if (controlsRef.current) {
             const camera = controlsRef.current.object;
             const direction = camera.position.clone().normalize();
-            const newDistance = Math.min(camera.position.length() + 1, 10);
-            camera.position.copy(direction.multiplyScalar(newDistance));
+            camera.position.copy(direction.multiplyScalar(Math.min(camera.position.length() + 1, 10)));
             controlsRef.current.update();
         }
     }, []);
 
-    // Reset state when letter changes
+    // 🤝 Merged: Your custom loading timeouts perfectly combined with teammate's video reset
     useEffect(() => {
-        setIsLoading(true);
-        setHasError(false);
-        setVideoError(false);
+        const initTimer = setTimeout(() => {
+            setIsLoading(true);
+            setHasError(false);
+            setVideoError(false);
+        }, 0);
+
+        let fallbackTimer;
+        // For placeholder models, close loading animation after 500ms
+        if (!hasRealModel) {
+            fallbackTimer = setTimeout(() => {
+                setIsLoading(false);
+            }, 500);
+        } else {
+            // For real models, keep original 1500ms timeout
+            fallbackTimer = setTimeout(() => {
+                setIsLoading(false);
+            }, 1500);
+        }
+
         if (videoRef.current) {
             videoRef.current.load(); // Reload video when letter changes
         }
-    }, [letter]);
+
+        return () => {
+            clearTimeout(initTimer);
+            if (fallbackTimer) clearTimeout(fallbackTimer);
+        };
+    }, [letterStr, hasRealModel]);
 
     return (
         <motion.div
@@ -125,16 +145,16 @@ const ModelViewer = memo(({
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3 }}
             className={`
-        relative overflow-hidden
-        bg-dark-800 rounded-2xl
-        border border-dark-700
-        shadow-xl shadow-black/20
-        flex flex-col
-        ${className}
-      `}
+                relative overflow-hidden
+                bg-dark-800 rounded-2xl
+                border border-dark-700
+                shadow-xl shadow-black/20
+                flex flex-col
+                ${className}
+            `}
         >
-            {/* View Mode Tabs */}
-            <div className="flex border-b border-dark-700 w-full overflow-hidden shrink-0 bg-dark-800 rounded-t-2xl">
+            {/* 🤝 Merged: Teammate's View Mode Tabs */}
+            <div className="flex border-b border-dark-700 w-full overflow-hidden shrink-0 bg-dark-800 rounded-t-2xl z-20">
                 <button
                     onClick={() => setViewMode('3d')}
                     className={`flex-1 py-3 px-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${viewMode === '3d'
@@ -157,7 +177,7 @@ const ModelViewer = memo(({
                 </button>
             </div>
 
-            {/* Letter Badge (Only show in 3D mode because video needs full screen) */}
+            {/* 🤝 Merged: Teammate's Letter Badge */}
             <AnimatePresence>
                 {viewMode === '3d' && (
                     <motion.div
@@ -167,19 +187,20 @@ const ModelViewer = memo(({
                         className="absolute top-16 left-4 z-20 pointer-events-none"
                     >
                         <div className="
-                            w-12 h-12 rounded-xl
+                            min-w-[3rem] px-4 h-12 rounded-xl
                             bg-dark-800/80 backdrop-blur-md
                             border border-dark-600/50
                             flex items-center justify-center
                             shadow-lg
                         ">
-                            <span className="text-2xl font-bold bg-gradient-to-br from-white to-dark-200 bg-clip-text text-transparent">
-                                {letter}
+                            <span className="text-2xl font-bold bg-gradient-to-br from-white to-dark-200 bg-clip-text text-transparent capitalize">
+                                {letterStr}
                             </span>
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
+
             <div className={`relative w-full aspect-square sm:aspect-[4/3] flex-1 ${height !== '100%' ? '' : 'md:aspect-[16/10] min-h-[300px] sm:min-h-[400px] lg:min-h-[500px]'}`} style={height !== '100%' ? { height } : {}}>
                 <AnimatePresence mode="wait">
                     {viewMode === '3d' ? (
@@ -191,6 +212,7 @@ const ModelViewer = memo(({
                             transition={{ duration: 0.2 }}
                             className="absolute inset-0 w-full h-full"
                         >
+                            {/* 🤝 Merged: Your Robust Loading & Error States */}
                             <AnimatePresence mode="wait">
                                 {hasError ? (
                                     <motion.div
@@ -200,13 +222,7 @@ const ModelViewer = memo(({
                                         exit={{ opacity: 0 }}
                                         className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-20 bg-dark-800"
                                     >
-                                        <div className="w-16 h-16 rounded-full bg-error/10 flex items-center justify-center mb-4">
-                                            <Cuboid className="w-8 h-8 text-error" />
-                                        </div>
-                                        <h3 className="text-lg font-bold text-white mb-2">Model Failed to Load</h3>
-                                        <p className="text-dark-300 text-sm mb-6 max-w-sm">
-                                            We couldn't load the interactive 3D model for letter {letter}.
-                                        </p>
+                                        <ModelErrorState onRetry={handleRetry} />
                                     </motion.div>
                                 ) : isLoading ? (
                                     <motion.div
@@ -216,7 +232,7 @@ const ModelViewer = memo(({
                                         exit={{ opacity: 0 }}
                                         className="absolute inset-0 z-20 bg-dark-800 flex items-center justify-center"
                                     >
-                                        <ModelLoadingState message={`Loading ${letter}...`} />
+                                        <ModelLoadingState message={`Loading ${letterStr}...`} />
                                     </motion.div>
                                 ) : null}
                             </AnimatePresence>
@@ -229,7 +245,7 @@ const ModelViewer = memo(({
                                 <Suspense fallback={null}>
                                     <HandModel3D
                                         modelPath={modelPath}
-                                        letter={letter}
+                                        letter={letterStr}
                                         autoRotate={autoRotate}
                                         onLoad={handleLoad}
                                         onError={handleError}
@@ -237,8 +253,44 @@ const ModelViewer = memo(({
                                     />
                                 </Suspense>
                             </motion.div>
+
+                            {/* 🤝 Merged: Controls Toolbar */}
+                            <AnimatePresence>
+                                {showControls && !isLoading && !hasError && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: 10 }}
+                                        className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20"
+                                    >
+                                        <ModelControls
+                                            onResetView={handleResetView}
+                                            onToggleAutoRotate={handleToggleAutoRotate}
+                                            onZoomIn={handleZoomIn}
+                                            onZoomOut={handleZoomOut}
+                                            isAutoRotating={autoRotate}
+                                        />
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                            {/* Interaction hint */}
+                            <AnimatePresence>
+                                {!isLoading && !hasError && (
+                                    <motion.div
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ delay: 1 }}
+                                        className="absolute bottom-16 left-1/2 -translate-x-1/2 z-10 text-xs text-dark-400 pointer-events-none drop-shadow-md"
+                                    >
+                                        Drag to rotate • Scroll to zoom
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </motion.div>
                     ) : (
+                        /* 🤝 Merged: Teammate's Video Player logic */
                         <motion.div
                             key="video-viewer"
                             initial={{ opacity: 0 }}
@@ -254,7 +306,7 @@ const ModelViewer = memo(({
                                     </div>
                                     <h3 className="text-lg font-bold text-white mb-2">Video Unavailable</h3>
                                     <p className="text-dark-300 text-sm">
-                                        We're still working on the video example for letter {letter}.
+                                        We're still working on the video example for {letterStr}.
                                     </p>
                                 </div>
                             ) : (
@@ -270,48 +322,9 @@ const ModelViewer = memo(({
                     )}
                 </AnimatePresence>
             </div>
-
-            {/* Controls Toolbar (Only show in 3D mode) */}
-            <AnimatePresence>
-                {showControls && !isLoading && viewMode === '3d' && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20"
-                    >
-                        <ModelControls
-                            onResetView={handleResetView}
-                            onToggleAutoRotate={handleToggleAutoRotate}
-                            onZoomIn={handleZoomIn}
-                            onZoomOut={handleZoomOut}
-                            isAutoRotating={autoRotate}
-                        />
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* Interaction hint (Only show in 3D mode) */}
-            <AnimatePresence>
-                {!isLoading && !hasError && viewMode === '3d' && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ delay: 1 }}
-                        className="
-                absolute bottom-16 left-1/2 -translate-x-1/2 z-10
-                text-xs text-dark-400 pointer-events-none
-              "
-                    >
-                        Drag to rotate • Scroll to zoom
-                    </motion.div>
-                )}
-            </AnimatePresence>
         </motion.div >
     );
 });
 
 ModelViewer.displayName = 'ModelViewer';
-
 export default ModelViewer;

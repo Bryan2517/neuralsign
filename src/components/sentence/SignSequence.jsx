@@ -1,11 +1,11 @@
 /**
  * SignSequence Component
  * Animated sequence showing how to fingerspell each word
- * 
- * NeuralSign - AI Sign Language Learning Platform
+ * * NeuralSign - AI Sign Language Learning Platform
  */
 
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Play,
@@ -14,13 +14,13 @@ import {
     SkipForward,
     RotateCcw,
     Loader2,
-    ChevronLeft,
-    ChevronRight
+    Box,
+    Type
 } from 'lucide-react';
 import { getWordSign } from '@/data/commonWords';
 
-// Lazy load 3D viewer
-const HandModel3D = lazy(() => import('@/components/3d/HandModel3D'));
+// Lazy load 3D viewer (Using teammate's ModelViewer for word support)
+const ModelViewer = lazy(() => import('@/components/3d/ModelViewer'));
 
 // Speed options in milliseconds per letter
 const SPEED_OPTIONS = {
@@ -36,6 +36,8 @@ const SPEED_OPTIONS = {
  * @param {number} currentWordIndex - Currently selected word index
  */
 const SignSequence = ({ words = [], onWordSelect, currentWordIndex = 0 }) => {
+    // Toggle between Whole Word and Fingerspelling
+    const [viewMode, setViewMode] = useState('word'); // 'word' | 'spell'
     const [isPlaying, setIsPlaying] = useState(false);
     const [speed, setSpeed] = useState('normal');
     const [loopEnabled, setLoopEnabled] = useState(false);
@@ -47,68 +49,71 @@ const SignSequence = ({ words = [], onWordSelect, currentWordIndex = 0 }) => {
     const letters = wordSign?.letters || [];
     const currentLetterChar = letters[currentLetter] || '';
 
-    // Reset letter when word changes
+    // Fixed: Cascading Renders Error (Reset letter when word changes)
     useEffect(() => {
-        setCurrentLetter(0);
+        const timer = setTimeout(() => {
+            setCurrentLetter(0);
+            setIsPlaying(false); // Pause on word change for better UX
+        }, 0);
+        return () => clearTimeout(timer);
     }, [currentWord]);
 
-    // Sync with parent's currentWordIndex
+    // Fixed: Cascading Renders Error (Sync with parent index)
     useEffect(() => {
-        if (currentWordIndex !== currentWord) {
-            setCurrentWord(currentWordIndex);
-            setCurrentLetter(0);
-        }
-    }, [currentWordIndex]);
+        const timer = setTimeout(() => {
+            if (currentWordIndex !== currentWord) {
+                setCurrentWord(currentWordIndex);
+                setCurrentLetter(0);
+            }
+        }, 0);
+        return () => clearTimeout(timer);
+    }, [currentWordIndex, currentWord]);
 
-    // Auto-play logic
+    // Auto-play logic now works for both Words and Fingerspelling
     useEffect(() => {
-        if (!isPlaying || letters.length === 0) return;
+        if (!isPlaying || words.length === 0) return;
 
         const timer = setTimeout(() => {
-            if (currentLetter < letters.length - 1) {
-                // Next letter in current word
+            if (viewMode === 'spell' && currentLetter < letters.length - 1) {
                 setCurrentLetter(currentLetter + 1);
             } else if (currentWord < words.length - 1) {
-                // Next word
                 setCurrentWord(currentWord + 1);
                 setCurrentLetter(0);
                 onWordSelect?.(words[currentWord + 1], currentWord + 1);
             } else if (loopEnabled) {
-                // Loop back to start
                 setCurrentWord(0);
                 setCurrentLetter(0);
                 onWordSelect?.(words[0], 0);
             } else {
-                // Stop at end
                 setIsPlaying(false);
             }
         }, SPEED_OPTIONS[speed].ms);
 
         return () => clearTimeout(timer);
-    }, [isPlaying, currentLetter, currentWord, letters.length, words, speed, loopEnabled, onWordSelect]);
+    }, [isPlaying, currentLetter, currentWord, letters.length, words, speed, loopEnabled, onWordSelect, viewMode]);
 
-    // Navigation handlers
+    // Navigation handlers dynamically support both modes
     const handlePrevLetter = useCallback(() => {
-        if (currentLetter > 0) {
+        if (viewMode === 'spell' && currentLetter > 0) {
             setCurrentLetter(currentLetter - 1);
         } else if (currentWord > 0) {
             const prevWord = currentWord - 1;
             const prevWordSign = getWordSign(words[prevWord] || '');
             setCurrentWord(prevWord);
-            setCurrentLetter((prevWordSign?.letters?.length || 1) - 1);
+            setCurrentLetter(viewMode === 'spell' ? (prevWordSign?.letters?.length || 1) - 1 : 0);
             onWordSelect?.(words[prevWord], prevWord);
         }
-    }, [currentLetter, currentWord, words, onWordSelect]);
+    }, [currentLetter, currentWord, words, onWordSelect, viewMode]);
 
     const handleNextLetter = useCallback(() => {
-        if (currentLetter < letters.length - 1) {
+        if (viewMode === 'spell' && currentLetter < letters.length - 1) {
             setCurrentLetter(currentLetter + 1);
         } else if (currentWord < words.length - 1) {
             setCurrentWord(currentWord + 1);
             setCurrentLetter(0);
             onWordSelect?.(words[currentWord + 1], currentWord + 1);
         }
-    }, [currentLetter, letters.length, currentWord, words, onWordSelect]);
+    }, [currentLetter, letters.length, currentWord, words, onWordSelect, viewMode]);
 
     const handlePlayPause = useCallback(() => {
         setIsPlaying(!isPlaying);
@@ -133,6 +138,24 @@ const SignSequence = ({ words = [], onWordSelect, currentWordIndex = 0 }) => {
             animate={{ opacity: 1, y: 0 }}
             className="glass-card p-6"
         >
+            {/* View Mode Toggle */}
+            <div className="flex justify-center mb-8">
+                <div className="inline-flex bg-dark-800 p-1 rounded-xl border border-dark-700 shadow-inner">
+                    <button 
+                        onClick={() => { setViewMode('word'); setIsPlaying(false); }} 
+                        className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'word' ? 'bg-primary text-white shadow-lg' : 'text-dark-400 hover:text-white hover:bg-dark-700'}`}
+                    >
+                        <Box className="w-4 h-4" /> Whole Word
+                    </button>
+                    <button 
+                        onClick={() => { setViewMode('spell'); setIsPlaying(false); }} 
+                        className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'spell' ? 'bg-primary text-white shadow-lg' : 'text-dark-400 hover:text-white hover:bg-dark-700'}`}
+                    >
+                        <Type className="w-4 h-4" /> Fingerspelling
+                    </button>
+                </div>
+            </div>
+
             {/* Word Progress Dots */}
             <div className="flex items-center justify-center gap-2 mb-6">
                 {words.map((word, index) => (
@@ -156,18 +179,18 @@ const SignSequence = ({ words = [], onWordSelect, currentWordIndex = 0 }) => {
                 <p className="text-sm text-dark-400 mb-1">
                     Word {currentWord + 1} of {words.length}
                 </p>
-                <h3 className="text-2xl font-bold text-dark-100">
+                <h3 className="text-2xl font-bold text-dark-100 uppercase tracking-wider">
                     {words[currentWord]}
                 </h3>
                 <p className="text-sm text-dark-400 mt-1">
-                    {letters.length > 1
+                    {viewMode === 'spell' && letters.length > 1
                         ? `Fingerspelling: ${letters.join(' - ')}`
-                        : 'Single letter sign'}
+                        : viewMode === 'word' ? 'Target Gesture' : 'Single letter sign'}
                 </p>
             </div>
 
-            {/* Letter Progress */}
-            {letters.length > 1 && (
+            {/* Letter Progress - Only visible in spelling mode */}
+            {viewMode === 'spell' && letters.length > 1 && (
                 <div className="flex items-center justify-center gap-1 mb-4">
                     {letters.map((letter, index) => (
                         <div
@@ -186,7 +209,7 @@ const SignSequence = ({ words = [], onWordSelect, currentWordIndex = 0 }) => {
             )}
 
             {/* 3D Model Area */}
-            <div className="relative h-64 md:h-80 mb-6 rounded-xl overflow-hidden bg-dark-700/50">
+            <div className="relative h-64 md:h-80 mb-6 rounded-xl overflow-hidden bg-dark-700/50 border border-dark-600 shadow-inner">
                 <Suspense fallback={
                     <div className="w-full h-full flex items-center justify-center">
                         <Loader2 className="w-8 h-8 text-primary animate-spin" />
@@ -194,15 +217,16 @@ const SignSequence = ({ words = [], onWordSelect, currentWordIndex = 0 }) => {
                 }>
                     <AnimatePresence mode="wait">
                         <motion.div
-                            key={currentLetterChar}
+                            key={viewMode === 'word' ? words[currentWord] : currentLetterChar}
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9 }}
                             transition={{ duration: 0.2 }}
-                            className="w-full h-full"
+                            className="w-full h-full cursor-move"
                         >
+                            {/* 🤝 Merged: Using teammate's ModelViewer, but feeding it our dynamic letter logic */}
                             <ModelViewer
-                                letter={currentLetterChar}
+                                letter={viewMode === 'word' ? words[currentWord] : currentLetterChar}
                                 showControls={false}
                                 className="h-full border-none rounded-none"
                             />
@@ -210,61 +234,43 @@ const SignSequence = ({ words = [], onWordSelect, currentWordIndex = 0 }) => {
                     </AnimatePresence>
                 </Suspense>
 
-                {/* Letter count */}
-                <div className="absolute top-4 right-4 px-3 py-1 rounded-lg bg-dark-800/90 backdrop-blur-sm">
-                    <span className="text-sm text-dark-300">
-                        Letter {currentLetter + 1}/{letters.length}
+                {/* 🤝 Merged: Keeping your beautiful UI overlays */}
+                <div className="absolute top-4 left-4 min-w-[3rem] px-4 py-2 rounded-xl bg-dark-800/90 backdrop-blur-sm border border-dark-600 flex justify-center shadow-lg z-10">
+                    <span className="text-3xl font-bold text-primary capitalize">
+                        {viewMode === 'word' ? words[currentWord] : currentLetterChar}
                     </span>
+                </div>
+
+                <div className="absolute top-4 right-4 px-3 py-1 rounded-lg bg-dark-800/90 backdrop-blur-sm border border-dark-600 z-10">
+                    <span className="text-sm text-dark-300">
+                        {viewMode === 'word' ? 'Reference' : `Letter ${currentLetter + 1}/${letters.length}`}
+                    </span>
+                </div>
+
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[10px] text-dark-400 uppercase tracking-widest bg-dark-900/60 px-3 py-1 rounded-full backdrop-blur-sm pointer-events-none z-10">
+                    Drag to rotate
                 </div>
             </div>
 
-            {/* Playback Controls */}
+            {/* Playback Controls active in BOTH modes */}
             <div className="flex items-center justify-center gap-4 mb-6">
-                {/* Restart */}
-                <button
-                    onClick={handleRestart}
-                    className="p-2 rounded-lg bg-dark-600 text-dark-300 hover:bg-dark-500 hover:text-dark-100 transition-colors"
-                    title="Restart"
-                >
+                <button onClick={handleRestart} className="p-2 rounded-lg bg-dark-600 text-dark-300 hover:bg-dark-500 transition-colors" title="Restart">
                     <RotateCcw className="w-5 h-5" />
                 </button>
 
-                {/* Previous */}
-                <button
-                    onClick={handlePrevLetter}
-                    disabled={currentWord === 0 && currentLetter === 0}
-                    className="p-2 rounded-lg bg-dark-600 text-dark-300 hover:bg-dark-500 hover:text-dark-100 
-                             disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    title="Previous letter"
-                >
+                <button onClick={handlePrevLetter} disabled={currentWord === 0 && (viewMode === 'word' || currentLetter === 0)} className="p-2 rounded-lg bg-dark-600 text-dark-300 hover:bg-dark-500 disabled:opacity-50 transition-colors" title={viewMode === 'word' ? "Previous word" : "Previous letter"}>
                     <SkipBack className="w-5 h-5" />
                 </button>
 
-                {/* Play/Pause */}
-                <button
-                    onClick={handlePlayPause}
-                    className="p-4 rounded-full bg-primary text-white hover:bg-primary-dark transition-colors"
-                    title={isPlaying ? 'Pause' : 'Play'}
-                >
-                    {isPlaying ? (
-                        <Pause className="w-6 h-6" />
-                    ) : (
-                        <Play className="w-6 h-6 ml-0.5" />
-                    )}
+                <button onClick={handlePlayPause} className="p-4 rounded-full bg-primary text-white hover:bg-primary-dark transition-colors" title={isPlaying ? 'Pause' : 'Play'}>
+                    {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
                 </button>
 
-                {/* Next */}
-                <button
-                    onClick={handleNextLetter}
-                    disabled={currentWord === words.length - 1 && currentLetter === letters.length - 1}
-                    className="p-2 rounded-lg bg-dark-600 text-dark-300 hover:bg-dark-500 hover:text-dark-100 
-                             disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    title="Next letter"
-                >
+                <button onClick={handleNextLetter} disabled={currentWord === words.length - 1 && (viewMode === 'word' || currentLetter === letters.length - 1)} className="p-2 rounded-lg bg-dark-600 text-dark-300 hover:bg-dark-500 disabled:opacity-50 transition-colors" title={viewMode === 'word' ? "Next word" : "Next letter"}>
                     <SkipForward className="w-5 h-5" />
                 </button>
 
-                {/* Loop Toggle */}
+                {/* 🤝 Merged: Teammate's readable formatting for Loop toggle */}
                 <button
                     onClick={() => setLoopEnabled(!loopEnabled)}
                     className={`p-2 rounded-lg transition-colors ${loopEnabled
@@ -277,10 +283,10 @@ const SignSequence = ({ words = [], onWordSelect, currentWordIndex = 0 }) => {
                 </button>
             </div>
 
-            {/* Speed Controls */}
             <div className="flex items-center justify-center gap-2">
                 <span className="text-sm text-dark-400 mr-2">Speed:</span>
                 {Object.entries(SPEED_OPTIONS).map(([key, { label }]) => (
+                    /* 🤝 Merged: Teammate's readable formatting for Speed toggle */
                     <button
                         key={key}
                         onClick={() => setSpeed(key)}

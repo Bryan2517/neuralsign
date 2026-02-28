@@ -5,9 +5,10 @@
  * NeuralSign - AI Sign Language Learning Platform
  */
 
+
 import {
     collection, doc, getDoc, getDocs, query,
-    where, orderBy, updateDoc, arrayUnion,
+    where, orderBy, updateDoc, 
     serverTimestamp, increment
 } from 'firebase/firestore';
 import { db } from '@/services/firebase';

@@ -1,41 +1,26 @@
 /**
  * WordPractice Component
- * Practice signing each word individually with camera validation
- * 
- * NeuralSign - AI Sign Language Learning Platform
+ * 🚀 FIXED VERSION: Combining stable container with professional 2:1 layout
+ * * NeuralSign - AI Sign Language Learning Platform
  */
 
-import { useState, useCallback, useRef, lazy, Suspense } from 'react';
+import { useState, useCallback, useRef, lazy, Suspense, useEffect } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Camera,
-    CheckCircle2,
-    XCircle,
-    ChevronLeft,
-    ChevronRight,
-    SkipForward,
-    Loader2,
-    Target,
-    AlertCircle,
-    RefreshCw
+    Camera, CheckCircle2, XCircle, ChevronLeft, ChevronRight,
+    Loader2, Target, Box, Type, Sparkles
 } from 'lucide-react';
 import Button from '@/components/common/Button';
 import { getWordSign } from '@/data/commonWords';
-import { validateSentenceSign, captureFrameFromVideo, canMakeRequest, getCooldownRemaining } from '@/services/geminiService';
 
-// Lazy load components
-const HandModel3D = lazy(() => import('@/components/3d/HandModel3D'));
+import { validateSentenceSign, validateWholeWordSign, captureFrameFromVideo, canMakeRequest } from '@/services/geminiService';
+import CameraFeed from '@/components/camera/CameraFeed';
+import { useHandDetection } from '@/hooks/useHandDetection';
 
-/**
- * WordPractice Component
- * @param {string} word - Current word to practice
- * @param {number} wordIndex - Current word index
- * @param {number} totalWords - Total number of words
- * @param {string} fullSentence - The complete sentence for context
- * @param {Function} onComplete - Callback when word is correctly signed
- * @param {Function} onSkip - Callback when user skips this word
- * @param {Function} onBack - Callback to go to previous word
- */
+// 🤝 Merged: Teammate switched to ModelViewer to support full-word 3D models 
+const ModelViewer = lazy(() => import('@/components/3d/ModelViewer'));
+
 const WordPractice = ({
     word,
     wordIndex = 0,
@@ -45,172 +30,119 @@ const WordPractice = ({
     onSkip,
     onBack
 }) => {
+    const [practiceMode, setPracticeMode] = useState('word'); 
     const [validationResult, setValidationResult] = useState(null);
     const [isValidating, setIsValidating] = useState(false);
-    const [error, setError] = useState(null);
     const [currentLetter, setCurrentLetter] = useState(0);
-    const [cameraReady, setCameraReady] = useState(false);
-    const [cooldownRemaining, setCooldownRemaining] = useState(0);
+    const [practiceProgress, setPracticeProgress] = useState(0);
+    const dwellStartTimeRef = useRef(null);
 
-    const videoRef = useRef(null);
-    const streamRef = useRef(null);
+    const {
+        videoRef, canvasRef, isDetecting, isCameraActive,
+        isCameraLoading, handDetected, startDetection, stopDetection
+    } = useHandDetection({});
 
-    // Get sign data for word
     const wordSign = getWordSign(word || '');
     const letters = wordSign?.letters || [];
+    
     const currentLetterChar = letters[currentLetter] || word?.charAt(0) || 'A';
+    const isWholeWordMode = practiceMode === 'word';
+    const targetSignDisplay = isWholeWordMode ? word : currentLetterChar;
 
-    // Start camera
-    const startCamera = useCallback(async () => {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    width: { ideal: 640 },
-                    height: { ideal: 480 },
-                    facingMode: 'user'
-                }
-            });
+    useEffect(() => {
+        setCurrentLetter(0);
+    }, [word, practiceMode]);
 
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
-                streamRef.current = stream;
-                setCameraReady(true);
-            }
-        } catch (err) {
-            console.error('Camera error:', err);
-            setError({
-                type: 'camera',
-                message: 'Could not access camera. Please check permissions.'
-            });
-        }
-    }, []);
+    // Reset UI validation state when any context changes
+    useEffect(() => {
+        setValidationResult(null);
+        setPracticeProgress(0);
+        dwellStartTimeRef.current = null;
+    }, [word, practiceMode, currentLetter]);
 
-    // Stop camera
-    const stopCamera = useCallback(() => {
-        if (streamRef.current) {
-            streamRef.current.getTracks().forEach(track => track.stop());
-            streamRef.current = null;
-        }
-        setCameraReady(false);
-    }, []);
-
-    // Validate sign
     const handleValidate = useCallback(async () => {
-        if (!videoRef.current || !cameraReady) {
-            setError({
-                type: 'camera',
-                message: 'Camera not ready. Please wait or refresh.'
-            });
-            return;
-        }
-
-        // Check cooldown
-        if (!canMakeRequest()) {
-            const remaining = getCooldownRemaining();
-            setCooldownRemaining(Math.ceil(remaining / 1000));
-
-            const interval = setInterval(() => {
-                const newRemaining = getCooldownRemaining();
-                if (newRemaining <= 0) {
-                    setCooldownRemaining(0);
-                    clearInterval(interval);
-                } else {
-                    setCooldownRemaining(Math.ceil(newRemaining / 1000));
-                }
-            }, 1000);
-
-            return;
-        }
+        if (!videoRef.current || !isCameraActive) return;
+        if (!canMakeRequest()) return;
 
         setIsValidating(true);
-        setError(null);
-
         try {
-            // Capture frame
             const imageBase64 = captureFrameFromVideo(videoRef.current);
+            if (!imageBase64) throw new Error('Capture failed');
 
-            if (!imageBase64) {
-                throw new Error('Could not capture frame from camera');
-            }
-
-            // Validate with Gemini
-            const result = await validateSentenceSign(imageBase64, currentLetterChar, fullSentence);
+            const result = isWholeWordMode 
+                ? await validateWholeWordSign(imageBase64, word, fullSentence)
+                : await validateSentenceSign(imageBase64, currentLetterChar, fullSentence);
+            
             setValidationResult(result);
 
-            // If correct, auto-advance after delay
             if (result.isCorrect) {
                 setTimeout(() => {
-                    if (currentLetter < letters.length - 1) {
-                        // Next letter
-                        setCurrentLetter(currentLetter + 1);
-                        setValidationResult(null);
-                    } else {
-                        // Word complete
-                        onComplete?.(result.accuracy);
-                    }
+                    if (isWholeWordMode) onComplete?.(result.accuracy);
+                    else if (currentLetter < letters.length - 1) {
+                        setCurrentLetter(prev => prev + 1);
+                    } else onComplete?.(result.accuracy);
                 }, 1500);
             }
-        } catch (err) {
-            console.error('Validation error:', err);
-            setError({
-                type: 'validation',
-                message: err.message || 'Validation failed. Please try again.'
-            });
-        } finally {
-            setIsValidating(false);
-        }
-    }, [cameraReady, currentLetterChar, fullSentence, currentLetter, letters.length, onComplete]);
+        } catch (err) { console.error(err); }
+        finally { setIsValidating(false); setPracticeProgress(0); dwellStartTimeRef.current = null; }
+    }, [isCameraActive, isWholeWordMode, word, currentLetterChar, fullSentence, currentLetter, letters.length, onComplete, videoRef]);
 
-    // Handle retry
-    const handleRetry = useCallback(() => {
-        setValidationResult(null);
-        setError(null);
-    }, []);
+    useEffect(() => {
+        let frameId;
+        const processFrame = () => {
+            if (!isDetecting || !handDetected || isValidating || validationResult?.isCorrect) {
+                setPracticeProgress(0); dwellStartTimeRef.current = null;
+                frameId = requestAnimationFrame(processFrame);
+                return;
+            }
+            if (!dwellStartTimeRef.current) dwellStartTimeRef.current = Date.now();
+            else {
+                const elapsed = Date.now() - dwellStartTimeRef.current;
+                const progress = Math.min(100, (elapsed / 1500) * 100);
+                setPracticeProgress(progress);
+                if (progress === 100) { dwellStartTimeRef.current = null; handleValidate(); }
+            }
+            frameId = requestAnimationFrame(processFrame);
+        };
+        frameId = requestAnimationFrame(processFrame);
+        return () => cancelAnimationFrame(frameId);
+    }, [isDetecting, handDetected, isValidating, validationResult, handleValidate]);
+
+    const handleDynamicSkip = () => {
+        if (!isWholeWordMode && currentLetter < letters.length - 1) {
+            setCurrentLetter(prev => prev + 1);
+        } else {
+            onSkip(); 
+        }
+    };
+
+    const handleDynamicPrev = () => {
+        if (!isWholeWordMode && currentLetter > 0) {
+            setCurrentLetter(prev => prev - 1);
+        } else {
+            onBack(); 
+        }
+    };
+
+    if (!word) return null;
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="glass-card p-6"
-        >
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-                <div>
-                    <p className="text-sm text-dark-400">
-                        Word {wordIndex + 1} of {totalWords}
-                    </p>
-                    <h3 className="text-2xl font-bold text-dark-100">{word}</h3>
-                    {letters.length > 1 && (
-                        <p className="text-sm text-dark-400 mt-1">
-                            Letter {currentLetter + 1}/{letters.length}: <span className="text-primary font-bold">{currentLetterChar}</span>
-                        </p>
-                    )}
-                </div>
-
-                {/* Navigation */}
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={onBack}
-                        disabled={wordIndex === 0}
-                        className="p-2 rounded-lg bg-dark-600 text-dark-300 hover:bg-dark-500 
-                                 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                        <ChevronLeft className="w-5 h-5" />
+        <div className="space-y-6">
+            {/* Top-center mode switcher */}
+            <div className="flex justify-center">
+                <div className="inline-flex bg-dark-800 p-1 rounded-xl border border-dark-700">
+                    <button onClick={() => setPracticeMode('word')} className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-all ${isWholeWordMode ? 'bg-primary text-white shadow-lg' : 'text-dark-400 hover:text-white'}`}>
+                        <Box className="w-4 h-4" /> Whole Word
                     </button>
-                    <button
-                        onClick={() => onSkip?.()}
-                        className="flex items-center gap-1 px-3 py-2 rounded-lg bg-dark-600 
-                                 text-dark-300 hover:bg-dark-500 transition-colors"
-                    >
-                        <SkipForward className="w-4 h-4" />
-                        Skip
+                    <button onClick={() => setPracticeMode('spell')} className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-all ${!isWholeWordMode ? 'bg-primary text-white shadow-lg' : 'text-dark-400 hover:text-white'}`}>
+                        <Type className="w-4 h-4" /> Fingerspelling
                     </button>
                 </div>
             </div>
 
-            {/* Letter Progress */}
-            {letters.length > 1 && (
-                <div className="flex items-center justify-center gap-1 mb-6">
+            {/* 🤝 Merged: Teammate's Letter Progress Bar (Only visible in spelling mode) */}
+            {!isWholeWordMode && letters.length > 1 && (
+                <div className="flex items-center justify-center gap-1 mb-2">
                     {letters.map((letter, index) => (
                         <div
                             key={`letter-${index}`}
@@ -227,179 +159,127 @@ const WordPractice = ({
                 </div>
             )}
 
-            {/* Main Content - Split View */}
-            <div className="grid md:grid-cols-2 gap-6">
-                {/* Reference Model */}
-                <div className="relative h-64 rounded-xl overflow-hidden bg-dark-700/50">
-                    <Suspense fallback={
-                        <div className="w-full h-full flex items-center justify-center">
-                            <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                        </div>
-                    }>
-                        <ModelViewer
-                            letter={currentLetterChar}
-                            showControls={false}
-                            className="h-full border-none rounded-none"
+            {/* Core 2:1 split layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+                
+                {/* 🚀 Your Fixed: Free Sign-style centered flex-column layout */}
+                <div className="lg:col-span-2 relative glass-card p-2 rounded-2xl bg-dark-900 border border-dark-700 shadow-2xl flex flex-col justify-center">
+                    <div className="relative w-full rounded-xl overflow-hidden aspect-video bg-black flex items-center justify-center">
+                        <CameraFeed
+                            videoRef={videoRef} canvasRef={canvasRef} isActive={isCameraActive}
+                            isLoading={isCameraLoading} isDetecting={isDetecting} handDetected={handDetected}
+                            onStart={() => startDetection()} onStop={() => stopDetection()} onRetry={() => startDetection()}
                         />
-                    </Suspense>
+                        
+                        {/* Floating progress indicator */}
+                        <AnimatePresence>
+                            {isCameraActive && handDetected && !isValidating && !validationResult?.isCorrect && (
+                                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 w-64">
+                                    <div className="bg-dark-900/95 backdrop-blur-md p-3 rounded-xl border border-primary/40 shadow-xl flex flex-col items-center">
+                                        <div className="w-full h-2 bg-dark-800 rounded-full overflow-hidden">
+                                            <div className="h-full bg-gradient-to-r from-primary to-secondary transition-all" style={{ width: `${practiceProgress}%` }} />
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        {/* 🤝 Merged: Teammate's Big Validation Flash Overlay */}
+                        <AnimatePresence>
+                            {validationResult && (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className={`absolute inset-0 flex items-center justify-center z-30 backdrop-blur-sm ${validationResult.isCorrect ? 'bg-success/20' : 'bg-error/20'}`}
+                                >
+                                    {validationResult.isCorrect ? (
+                                        <CheckCircle2 className="w-24 h-24 text-success drop-shadow-lg" />
+                                    ) : (
+                                        <XCircle className="w-24 h-24 text-error drop-shadow-lg" />
+                                    )}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        {/* Camera start overlay */}
+                        {!isCameraActive && !isCameraLoading && (
+                            <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-4 bg-dark-900/90 backdrop-blur-sm">
+                                <Camera className="w-12 h-12 text-dark-400" />
+                                <Button variant="primary" onClick={() => startDetection()}>Start Camera</Button>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                {/* Camera Feed */}
-                <div className="relative h-64 rounded-xl overflow-hidden bg-dark-700/50">
-                    <div className="absolute top-3 left-3 z-10 px-3 py-1 rounded-lg bg-dark-800/90">
-                        <span className="text-sm text-dark-300">Your Sign</span>
+                {/* Right-side 3D reference panel */}
+                <div className="lg:col-span-1 flex flex-col gap-4">
+                    <div className="glass-card flex-1 flex flex-col border border-dark-600 rounded-2xl bg-dark-800/80 overflow-hidden shadow-xl">
+                        <div className="p-4 border-b border-dark-700 bg-dark-900/40">
+                            <h3 className="text-xs font-bold text-dark-400 uppercase tracking-widest flex items-center gap-2">
+                                <Sparkles className="w-4 h-4 text-primary" /> 3D REFERENCE
+                            </h3>
+                        </div>
+                        
+                        <div className="flex-1 relative min-h-[300px] flex items-center justify-center">
+                            <Suspense fallback={<Loader2 className="animate-spin text-primary" />}>
+                                {/* 🤝 Merged: Using ModelViewer to support teammate's complete words */}
+                                <ModelViewer
+                                    letter={targetSignDisplay}
+                                    showControls={false}
+                                    className="w-full h-full border-none rounded-none bg-transparent shadow-none"
+                                />
+                            </Suspense>
+                            
+                            {/* Current target badge */}
+                            <div className="absolute top-4 left-4 px-3 py-1.5 rounded-lg bg-primary/20 border border-primary/30 backdrop-blur-md">
+                                <span className="text-primary font-bold text-lg uppercase">{targetSignDisplay}</span>
+                            </div>
+                        </div>
+
+                        <div className="p-5 bg-dark-900/60 border-t border-dark-700">
+                            <p className="text-xs text-dark-400 uppercase font-bold mb-1">Target Sign</p>
+                            <h4 className="text-2xl font-black text-white capitalize">
+                                {isWholeWordMode ? word : `Letter ${currentLetter + 1}: ${currentLetterChar}`}
+                            </h4>
+                            <p className="text-xs text-dark-400 mt-2">Word {wordIndex + 1} of {totalWords}</p>
+                        </div>
                     </div>
 
-                    {!cameraReady ? (
-                        <div className="w-full h-full flex flex-col items-center justify-center gap-4">
-                            <Camera className="w-12 h-12 text-dark-400" />
-                            <Button
-                                variant="primary"
-                                onClick={startCamera}
-                                leftIcon={<Camera className="w-4 h-4" />}
-                            >
-                                Start Camera
-                            </Button>
-                        </div>
-                    ) : (
-                        <>
-                            <video
-                                ref={videoRef}
-                                autoPlay
-                                playsInline
-                                muted
-                                className="w-full h-full object-cover transform scale-x-[-1]"
-                            />
+                    <div className="flex gap-2">
+                        <button 
+                            onClick={handleDynamicPrev} 
+                            disabled={wordIndex === 0 && (isWholeWordMode || currentLetter === 0)} 
+                            className="flex-1 p-3 rounded-xl bg-dark-700 text-dark-300 hover:bg-dark-600 disabled:opacity-30 flex items-center justify-center gap-2 font-bold text-sm transition-colors"
+                        >
+                            <ChevronLeft className="w-4 h-4" /> {isWholeWordMode ? 'Previous' : 'Prev Letter'}
+                        </button>
 
-                            {/* Validation Overlay */}
-                            <AnimatePresence>
-                                {validationResult && (
-                                    <motion.div
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        className={`absolute inset-0 flex items-center justify-center ${validationResult.isCorrect
-                                            ? 'bg-success/20'
-                                            : 'bg-error/20'
-                                            }`}
-                                    >
-                                        {validationResult.isCorrect ? (
-                                            <CheckCircle2 className="w-16 h-16 text-success" />
-                                        ) : (
-                                            <XCircle className="w-16 h-16 text-error" />
-                                        )}
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </>
-                    )}
+                        <button 
+                            onClick={handleDynamicSkip} 
+                            className="flex-1 p-3 rounded-xl bg-dark-700 text-dark-300 hover:bg-dark-600 flex items-center justify-center gap-2 font-bold text-sm transition-colors"
+                        >
+                            {isWholeWordMode ? 'Skip Word' : 'Skip Letter'} <ChevronRight className="w-4 h-4" />
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            {/* Validation Result */}
+            {/* Validation feedback panel */}
             <AnimatePresence>
                 {validationResult && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className={`mt-6 p-4 rounded-xl ${validationResult.isCorrect
-                            ? 'bg-success/10 border border-success/30'
-                            : 'bg-error/10 border border-error/30'
-                            }`}
-                    >
-                        <div className="flex items-start gap-3">
-                            {validationResult.isCorrect ? (
-                                <CheckCircle2 className="w-6 h-6 text-success flex-shrink-0" />
-                            ) : (
-                                <XCircle className="w-6 h-6 text-error flex-shrink-0" />
-                            )}
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className={`mt-2 p-4 rounded-xl border ${validationResult.isCorrect ? 'bg-success/10 border-success/30' : 'bg-error/10 border-error/30'}`}>
+                        <div className="flex items-center gap-4">
+                            {validationResult.isCorrect ? <CheckCircle2 className="w-6 h-6 text-success flex-shrink-0" /> : <XCircle className="w-6 h-6 text-error flex-shrink-0" />}
                             <div className="flex-1">
-                                <p className={`font-medium ${validationResult.isCorrect ? 'text-success' : 'text-error'}`}>
-                                    {validationResult.isCorrect ? 'Great job!' : 'Keep trying!'}
-                                </p>
-                                <p className="text-sm text-dark-300 mt-1">{validationResult.feedback}</p>
-
-                                {/* Accuracy */}
-                                <div className="mt-2 flex items-center gap-2">
-                                    <Target className="w-4 h-4 text-dark-400" />
-                                    <span className="text-sm text-dark-400">
-                                        Accuracy: {validationResult.accuracy}%
-                                    </span>
-                                </div>
-
-                                {/* Suggestions */}
-                                {validationResult.suggestions?.length > 0 && !validationResult.isCorrect && (
-                                    <ul className="mt-2 space-y-1">
-                                        {validationResult.suggestions.map((tip, i) => (
-                                            <li key={i} className="text-sm text-dark-400">• {tip}</li>
-                                        ))}
-                                    </ul>
-                                )}
+                                <p className={`font-bold ${validationResult.isCorrect ? 'text-success' : 'text-error'}`}>{validationResult.isCorrect ? 'Great Accuracy!' : 'Keep Trying'}</p>
+                                <p className="text-sm text-dark-200">{validationResult.feedback}</p>
                             </div>
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
-
-            {/* Error Display */}
-            <AnimatePresence>
-                {error && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="mt-6 p-4 rounded-xl bg-error/10 border border-error/30"
-                    >
-                        <div className="flex items-start gap-3">
-                            <AlertCircle className="w-5 h-5 text-error flex-shrink-0" />
-                            <p className="text-sm text-error">{error.message}</p>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* Action Buttons */}
-            <div className="mt-6 flex flex-wrap gap-3">
-                {cameraReady && !validationResult?.isCorrect && (
-                    <Button
-                        variant="primary"
-                        onClick={handleValidate}
-                        isLoading={isValidating}
-                        isDisabled={cooldownRemaining > 0}
-                        leftIcon={isValidating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Target className="w-4 h-4" />}
-                        className="flex-1"
-                    >
-                        {cooldownRemaining > 0
-                            ? `Wait ${cooldownRemaining}s`
-                            : isValidating
-                                ? 'Validating...'
-                                : 'Validate Sign'}
-                    </Button>
-                )}
-
-                {validationResult && !validationResult.isCorrect && (
-                    <Button
-                        variant="outline"
-                        onClick={handleRetry}
-                        leftIcon={<RefreshCw className="w-4 h-4" />}
-                    >
-                        Try Again
-                    </Button>
-                )}
-
-                {validationResult?.isCorrect && currentLetter === letters.length - 1 && (
-                    <Button
-                        variant="success"
-                        onClick={() => onComplete?.(validationResult.accuracy)}
-                        leftIcon={<ChevronRight className="w-4 h-4" />}
-                        className="flex-1"
-                    >
-                        Next Word
-                    </Button>
-                )}
-            </div>
-        </motion.div>
+        </div>
     );
 };
 

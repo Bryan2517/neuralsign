@@ -1,7 +1,8 @@
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
 /**
  * Gemini AI Service
  * Handles communication with Google's Gemini Vision API for sign validation
- * 
  * NeuralSign - AI Sign Language Learning Platform
  */
 
@@ -67,7 +68,6 @@ export function isGeminiConfigured() {
 
 /**
  * Capture a frame from video element and convert to base64
- * 
  * @param {HTMLVideoElement} videoElement - The video element to capture from
  * @returns {string|null} Base64 encoded image data (without prefix) or null on error
  */
@@ -164,7 +164,6 @@ async function makeGeminiRequest(imageBase64, prompt) {
 
 /**
  * Validate a hand sign using Gemini Vision API with retry logic
- * 
  * @param {string} imageBase64 - Base64 encoded image (without prefix)
  * @param {string} targetLetter - The ASL letter the user is trying to sign
  * @returns {Promise<Object>} Validation result with isCorrect, accuracy, feedback, suggestions
@@ -292,7 +291,6 @@ Rules for your response:
 /**
  * Parse Gemini response to extract JSON object
  * Handles cases where Gemini adds extra text or markdown
- * 
  * @param {string} responseText - Raw text response from Gemini
  * @returns {Object|null} Parsed result object or null
  */
@@ -331,7 +329,6 @@ function parseGeminiResponse(responseText) {
 
 /**
  * Validate and normalize the result object
- * 
  * @param {Object} result - Parsed result object
  * @returns {Object} Normalized result
  */
@@ -353,11 +350,154 @@ function validateAndNormalizeResult(result) {
 }
 
 /**
- * Analyze a sentence and break it down into ASL signs
- * Uses proper ASL grammar rules: TIME + TOPIC + COMMENT, question words at end
- * 
- * @param {string} sentence - Plain text sentence to analyze
- * @returns {Promise<{original: string, aslWords: string[], explanation: string}>}
+ * Validate a hand sign in the context of a sentence word
+ * @param {string} imageBase64 - Base64 encoded image (without prefix)
+ * @param {string} targetWord - The word the user is trying to sign
+ * @param {string} fullSentence - The complete sentence for context
+ * @returns {Promise<Object>} Validation result
+ */
+export async function validateSentenceSign(imageBase64, targetWord, fullSentence) {
+    // Default error response
+    const errorResponse = {
+        isCorrect: false,
+        accuracy: 0,
+        feedback: 'Unable to analyze. Please try again.',
+        suggestions: ['Check your internet connection', 'Try again in a moment']
+    };
+
+    // Check API key
+    if (!GEMINI_API_KEY) {
+        console.error('❌ Gemini API key not configured');
+        return {
+            ...errorResponse,
+            feedback: 'AI validation not configured.'
+        };
+    }
+
+    // Validate input
+    if (!imageBase64) {
+        return {
+            ...errorResponse,
+            feedback: 'No image captured. Please ensure camera is working.'
+        };
+    }
+
+    // Check cooldown
+    const cooldown = getCooldownRemaining();
+    if (cooldown > 0) {
+        console.log(`⏳ Waiting ${Math.ceil(cooldown / 1000)}s for cooldown...`);
+        await sleep(cooldown);
+    }
+
+    // Update last request time
+    lastRequestTime = Date.now();
+
+    console.log(`🔍 Validating sign for word "${targetWord}" in sentence context...`);
+
+    const prompt = `You are a friendly sign language expert analyzing a hand sign in the context of a sentence.
+The user is signing the word "${targetWord}" as part of the sentence: "${fullSentence}"
+
+Since this word is being fingerspelled, check if the user is making the correct hand shape for the letter(s) in "${targetWord}".
+
+IMPORTANT: Be VERY LENIENT. This is a learning app, not an exam. Webcam angles and lighting can affect appearance.
+
+Analyze the hand position and respond with ONLY a valid JSON object:
+{
+  "isCorrect": true or false,
+  "accuracy": a number between 0 and 100,
+  "feedback": "brief encouraging message",
+  "suggestions": ["tip 1", "tip 2"]
+}
+
+Rules:
+- isCorrect = true if accuracy >= 50 (lenient for learners)
+- Be encouraging and specific, focus on what they're doing right
+- If the general hand shape is recognizable, give high accuracy (80-95%)
+- Consider that context matters - some words can be signed differently depending on sentence meaning
+- If no hand is detected, set accuracy to 0
+- For fingerspelling, focus on the general letter shapes being recognizable
+- Webcam distortion and angles should NOT significantly penalize the score
+
+Respond with ONLY the JSON object, nothing else.`;
+
+    // Retry logic with exponential backoff
+    let lastError = null;
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        if (attempt > 0) {
+            const backoffTime = INITIAL_BACKOFF * Math.pow(2, attempt - 1);
+            console.log(`🔄 Retry attempt ${attempt + 1}/${MAX_RETRIES} after ${backoffTime}ms...`);
+            await sleep(backoffTime);
+        }
+
+        const result = await makeGeminiRequest(imageBase64, prompt);
+
+        if (result.success) {
+            const textResponse = result.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+            if (!textResponse) {
+                console.error('❌ No text response from Gemini');
+                return errorResponse;
+            }
+
+            console.log('📝 Raw Gemini response:', textResponse);
+
+            const parsedResult = parseGeminiResponse(textResponse);
+
+            if (parsedResult) {
+                console.log('✅ Validation result:', parsedResult);
+                return parsedResult;
+            }
+
+            return errorResponse;
+        }
+
+        if (result.rateLimited) {
+            console.warn(`⚠️ Rate limited (attempt ${attempt + 1}/${MAX_RETRIES})`);
+            setRateLimitCooldown(10);
+            lastError = 'Rate limited';
+            continue;
+        }
+
+        lastError = result.error;
+    }
+
+    // All retries exhausted
+    console.error('❌ All retry attempts failed:', lastError);
+    return {
+        ...errorResponse,
+        feedback: 'Too many requests. Please wait a moment before trying again.',
+        suggestions: ['Wait 10-15 seconds', 'Try again']
+    };
+}
+
+// Initialize the Gemini API instance using the environment variable
+let genAIInstance = null;
+
+/**
+ * Get the initialized Gemini instance.
+ * Throws an error if the API key is missing.
+ * @returns {GoogleGenerativeAI} The Gemini API instance
+ */
+export function getGeminiInstance() {
+    if (!genAIInstance) {
+        if (!GEMINI_API_KEY) {
+            console.error("Gemini API key is missing. Please check your .env file.");
+            throw new Error("Missing VITE_GEMINI_API_KEY");
+        }
+        genAIInstance = new GoogleGenerativeAI(GEMINI_API_KEY);
+    }
+    return genAIInstance;
+}
+
+// ============================================================================
+// Guided Mode: English to ASL Breakdown (Teammate's Original Feature)
+// ============================================================================
+
+/**
+ * Analyze an English sentence and break it down into ASL syntax (Gloss).
+ * Used in the Guided Wizard mode to teach users how to structure sentences.
+ * @param {string} sentence - The standard English sentence
+ * @returns {Promise<Object>} - { original, aslWords, explanation }
  */
 export async function analyzeSentenceToSigns(sentence) {
     // Default response
@@ -520,60 +660,133 @@ Ensure the ASL order is natural and grammatically correct for ASL.`;
     }
 }
 
+// ============================================================================
+// Free Flow Mode: ASL to English Translation & Feedback
+// ============================================================================
+
 /**
- * Validate a hand sign in the context of a sentence word
- * 
- * @param {string} imageBase64 - Base64 encoded image (without prefix)
- * @param {string} targetWord - The word the user is trying to sign
- * @param {string} fullSentence - The complete sentence for context
- * @returns {Promise<Object>} Validation result
+ * Analyze a sequence of raw ASL words and translate them into natural English,
+ * providing grammar feedback for the learner.
+ * Used exclusively in the Free Flow Sentence Builder.
+ * @param {string[]} words - Array of captured signs (e.g., ["I", "Love", "Water"])
+ * @returns {Promise<Object>} - { smoothEnglish, feedback, missingSigns }
  */
-export async function validateSentenceSign(imageBase64, targetWord, fullSentence) {
-    // Default error response
+export async function translateASLSequence(words) {
+    if (!words || words.length === 0) {
+        return {
+            smoothEnglish: "",
+            feedback: "No signs captured. Please try again.",
+            missingSigns: []
+        };
+    }
+
+    // Retain the original hardcoded tutorial logic for the specific "I Water" case
+    const hasI = words.includes("I") || words.includes("i-me");
+    const hasWater = words.includes("Water") || words.includes("water");
+    const hasVerb = words.includes("Want") || words.includes("Love") || words.includes("want") || words.includes("love");
+
+    if (hasI && hasWater && !hasVerb) {
+        return {
+            smoothEnglish: "I want water. / I love water.",
+            feedback: "It looks like you forgot your verb! In ASL, you still need an action word between 'I' and 'Water'. Try practicing these missing signs:",
+            missingSigns: ["want", "love"]
+        };
+    }
+
+    if (hasI && hasWater && hasVerb) {
+        return {
+            smoothEnglish: `I ${words[1].toLowerCase()} water.`,
+            feedback: "Excellent! You used a perfect Subject-Verb-Object structure. Your ASL grammar is spot on!",
+            missingSigns: []
+        };
+    }
+
+    const rawSequence = words.join(" ");
+    const prompt = `Translate this ASL sequence into natural English: [${rawSequence}]. Provide encouraging grammar feedback. Format as JSON with keys: smoothEnglish, feedback, missingSigns (array).`;
+
+    try {
+        console.log(`📝 Translating ASL sequence: "${rawSequence}"`);
+        
+        // Using the reliable fetch method that analyzeSentenceToSigns uses
+        const response = await fetch(`${GEMINI_TEXT_URL}?key=${GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{ text: prompt }]
+                }],
+                generationConfig: {
+                    temperature: 0.2,
+                    // 🚀 THIS FORCES GOOGLE TO ONLY RETURN PURE JSON
+                    responseMimeType: "application/json", 
+                }
+            })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`API Status ${response.status}: ${errorText}`);
+        }
+
+        const data = await response.json();
+        const textResponse = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!textResponse) {
+            throw new Error("API returned empty text.");
+        }
+
+        console.log("📝 Raw Gemini Translation Response:", textResponse);
+
+        // Because we used responseMimeType, we can safely parse it directly
+        const parsedResult = JSON.parse(textResponse);
+
+        return {
+            smoothEnglish: parsedResult.smoothEnglish || rawSequence,
+            feedback: parsedResult.feedback || "Translation complete.",
+            missingSigns: Array.isArray(parsedResult.missingSigns) ? parsedResult.missingSigns : []
+        };
+
+    } catch (error) {
+        console.error("❌ Error translating ASL sequence:", error);
+        
+        // 🚀 THIS WILL SHOW THE EXACT ERROR ON YOUR SCREEN IF IT FAILS!
+        return { 
+            smoothEnglish: words.join(" "), 
+            feedback: `System Error: ${error.message}`, 
+            missingSigns: [] 
+        };
+    }
+}
+/**
+ * Validate a complete ASL word or phrase (used in coherent mode progression)
+ * @param {string} imageBase64 - Base64 encoded image
+ * @param {string} targetWord - The complete word the user is practicing (e.g., "HELLO")
+ * @param {string} fullSentence - The complete sentence context
+ */
+export async function validateWholeWordSign(imageBase64, targetWord, fullSentence) {
     const errorResponse = {
-        isCorrect: false,
-        accuracy: 0,
+        isCorrect: false, accuracy: 0,
         feedback: 'Unable to analyze. Please try again.',
         suggestions: ['Check your internet connection', 'Try again in a moment']
     };
 
-    // Check API key
-    if (!GEMINI_API_KEY) {
-        console.error('❌ Gemini API key not configured');
-        return {
-            ...errorResponse,
-            feedback: 'AI validation not configured.'
-        };
-    }
+    if (!isGeminiConfigured()) return { ...errorResponse, feedback: 'AI validation not configured.' };
+    if (!imageBase64) return { ...errorResponse, feedback: 'No image captured.' };
 
-    // Validate input
-    if (!imageBase64) {
-        return {
-            ...errorResponse,
-            feedback: 'No image captured. Please ensure camera is working.'
-        };
-    }
-
-    // Check cooldown
     const cooldown = getCooldownRemaining();
-    if (cooldown > 0) {
-        console.log(`⏳ Waiting ${Math.ceil(cooldown / 1000)}s for cooldown...`);
-        await sleep(cooldown);
-    }
-
-    // Update last request time
-    lastRequestTime = Date.now();
-
-    console.log(`🔍 Validating sign for word "${targetWord}" in sentence context...`);
+    if (cooldown > 0) await new Promise(resolve => setTimeout(resolve, cooldown));
+    
+    console.log(`🔍 AI Validating WHOLE WORD: "${targetWord}"...`);
 
     const prompt = `You are a friendly sign language expert analyzing a hand sign in the context of a sentence.
-The user is signing the word "${targetWord}" as part of the sentence: "${fullSentence}"
+The user is attempting to sign the COMPLETE WORD "${targetWord}" as part of the sentence: "${fullSentence}"
 
-Since this word is being fingerspelled, check if the user is making the correct hand shape for the letter(s) in "${targetWord}".
+IMPORTANT: Do NOT grade this as fingerspelling. Analyze if the gesture represents the general ASL sign for the entire word "${targetWord}".
+Be VERY LENIENT. This is a learning app. Webcam angles and lighting can heavily affect appearance. Focus on the general hand shape and movement intent.
 
-IMPORTANT: Be VERY LENIENT. This is a learning app, not an exam. Webcam angles and lighting can affect appearance.
-
-Analyze the hand position and respond with ONLY a valid JSON object:
+Respond with ONLY a valid JSON object:
 {
   "isCorrect": true or false,
   "accuracy": a number between 0 and 100,
@@ -583,63 +796,32 @@ Analyze the hand position and respond with ONLY a valid JSON object:
 
 Rules:
 - isCorrect = true if accuracy >= 50 (lenient for learners)
-- Be encouraging and specific, focus on what they're doing right
-- If the general hand shape is recognizable, give high accuracy (80-95%)
-- Consider that context matters - some words can be signed differently depending on sentence meaning
+- If the general sign is recognizable, give high accuracy (80-95%)
 - If no hand is detected, set accuracy to 0
-- For fingerspelling, focus on the general letter shapes being recognizable
-- Webcam distortion and angles should NOT significantly penalize the score
+- Respond with ONLY the JSON object, nothing else.`;
 
-Respond with ONLY the JSON object, nothing else.`;
-
-    // Retry logic with exponential backoff
-    let lastError = null;
-    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-        if (attempt > 0) {
-            const backoffTime = INITIAL_BACKOFF * Math.pow(2, attempt - 1);
-            console.log(`🔄 Retry attempt ${attempt + 1}/${MAX_RETRIES} after ${backoffTime}ms...`);
-            await sleep(backoffTime);
-        }
-
+    for (let attempt = 0; attempt < 3; attempt++) {
+        if (attempt > 0) await new Promise(resolve => setTimeout(resolve, 2000 * Math.pow(2, attempt - 1)));
+        
         const result = await makeGeminiRequest(imageBase64, prompt);
 
         if (result.success) {
             const textResponse = result.data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-            if (!textResponse) {
-                console.error('❌ No text response from Gemini');
-                return errorResponse;
-            }
-
-            console.log('📝 Raw Gemini response:', textResponse);
-
+            if (!textResponse) return errorResponse;
+            
             const parsedResult = parseGeminiResponse(textResponse);
-
-            if (parsedResult) {
-                console.log('✅ Validation result:', parsedResult);
-                return parsedResult;
-            }
-
+            if (parsedResult) return parsedResult;
             return errorResponse;
         }
 
         if (result.rateLimited) {
-            console.warn(`⚠️ Rate limited (attempt ${attempt + 1}/${MAX_RETRIES})`);
             setRateLimitCooldown(10);
-            lastError = 'Rate limited';
+            console.warn(`Attempt ${attempt + 1}: Rate limited`);
             continue;
         }
-
-        lastError = result.error;
+        console.warn(`Attempt ${attempt + 1} Error:`, result.error);
     }
-
-    // All retries exhausted
-    console.error('❌ All retry attempts failed:', lastError);
-    return {
-        ...errorResponse,
-        feedback: 'Too many requests. Please wait a moment before trying again.',
-        suggestions: ['Wait 10-15 seconds', 'Try again']
-    };
+    return { ...errorResponse, feedback: 'Too many requests.', suggestions: ['Wait a moment', 'Try again'] };
 }
 
 export default {
@@ -649,6 +831,7 @@ export default {
     analyzeSentenceToSigns,
     validateSentenceSign,
     getCooldownRemaining,
-    canMakeRequest
+    canMakeRequest,
+    translateASLSequence,
+    validateWholeWordSign,
 };
-
