@@ -139,15 +139,17 @@ This project was built for **KitaHack 2026**, a hackathon focused on creating im
 
 ### SDG Alignment
 
-**SDG 4: Quality Education** - NeuralSign promotes inclusive and equitable quality education by making sign language learning accessible to everyone, breaking down communication barriers for the deaf and hard-of-hearing community.
+- **SDG 10: Reduced Inequalities** - NeuralSign directly enables greater participation in everyday society by breaking down communication barriers for the deaf and hard-of-hearing community.
+- **SDG 4: Quality Education** - NeuralSign promotes inclusive and equitable quality education by making sign language learning accessible to everyone, breaking down communication barriers for the deaf and hard-of-hearing community.
 
 ---
 
 ## 👥 Team
 
-- **Team Member 1** - Role
-- **Team Member 2** - Role  
-- **Team Member 3** - Role
+- **Bryan Low Zhern Yang** - Team Leader
+- **Evin Kor Kar Hei** - Team Member
+- **Ng Xue Qing** - Team Member
+- **Gooi Hooi Qi** - Team Member
 
 ---
 
