@@ -273,7 +273,7 @@ After user feedback revealed that 3D models alone were not intuitive enough for 
 ## 📈 Analytics (Firebase)
 
 From January 1st to February 26th 2026, NeuralSign has recorded:
-- **28** active users (all based in Malaysia)
+- **12** active users (all based in Malaysia)
 - **104** sessions started
 - **392** total page views
 - **149** practice attempts
