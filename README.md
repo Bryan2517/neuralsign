@@ -20,6 +20,17 @@ NeuralSign is an innovative web application designed to teach sign language thro
 
 ---
 
+## 🏆 KitaHack 2026
+
+This project was built for **KitaHack 2026**, a hackathon focused on creating impactful solutions using Google technologies.
+
+### SDG Alignment
+
+- **SDG 10: Reduced Inequalities** - NeuralSign directly enables greater participation in everyday society by breaking down communication barriers for the deaf and hard-of-hearing community.
+- **SDG 4: Quality Education** - NeuralSign promotes inclusive and equitable quality education by making sign language learning accessible to everyone, breaking down communication barriers for the deaf and hard-of-hearing community.
+
+---
+
 ## 🛠️ Tech Stack
 
 ### Frontend
@@ -130,17 +141,6 @@ neuralsign/
 | `npm run build` | Build for production |
 | `npm run preview` | Preview production build |
 | `npm run lint` | Run ESLint |
-
----
-
-## 🏆 KitaHack 2026
-
-This project was built for **KitaHack 2026**, a hackathon focused on creating impactful solutions using Google technologies.
-
-### SDG Alignment
-
-- **SDG 10: Reduced Inequalities** - NeuralSign directly enables greater participation in everyday society by breaking down communication barriers for the deaf and hard-of-hearing community.
-- **SDG 4: Quality Education** - NeuralSign promotes inclusive and equitable quality education by making sign language learning accessible to everyone, breaking down communication barriers for the deaf and hard-of-hearing community.
 
 ---
 
