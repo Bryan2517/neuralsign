@@ -29,7 +29,7 @@ const ModelViewer = memo(({
     letter = 'A',
     onModelLoad,
     showControls = true,
-    hideBadge = false, 
+    hideBadge = false,
     onViewModeChange, // 🚀 ADD THIS PROP
     className = '',
     height = '100%'
@@ -39,25 +39,29 @@ const ModelViewer = memo(({
     const [autoRotate, setAutoRotate] = useState(false);
     const [viewMode, setViewMode] = useState('3d'); // '3d' or 'video'
     const [videoError, setVideoError] = useState(false);
-    
+
     const controlsRef = useRef(null);
     const videoRef = useRef(null);
 
     const letterStr = String(letter).toUpperCase();
-    
-    const REAL_MODELS = ['A', 'E', 'I', 'F', 'L', 'LOVE', 'WANT', 'WATER', 'WHAT', 'TIME', 'THANK-YOU', 'PLEASE'];
+
+    const REAL_MODELS = [
+        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+        'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+        'LOVE', 'WANT', 'WATER', 'WHAT', 'TIME', 'THANK-YOU', 'PLEASE'
+    ];
     const hasRealModel = REAL_MODELS.includes(letterStr);
 
     const modelPath = useMemo(() => {
-        if (!hasRealModel) return null; 
-        return letterStr.length > 1 
-            ? `/models/words/word_${letterStr.toLowerCase()}.glb` 
+        if (!hasRealModel) return null;
+        return letterStr.length > 1
+            ? `/models/words/word_${letterStr.toLowerCase()}.glb`
             : `/models/alphabet/letter_${letterStr}.glb`;
     }, [letterStr, hasRealModel]);
 
     const videoPath = useMemo(() => {
-        return letterStr.length > 1 
-            ? `/videos/words/word_${letterStr.toLowerCase()}.mp4` 
+        return letterStr.length > 1
+            ? `/videos/words/word_${letterStr.toLowerCase()}.mp4`
             : `/videos/alphabet/letter_${letterStr}.mp4`;
     }, [letterStr]);
 
